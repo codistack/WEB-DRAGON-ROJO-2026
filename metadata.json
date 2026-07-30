@@ -1,0 +1,6 @@
+{
+  "name": "Dragón Rojo",
+  "description": "Restaurante de gastronomía típica ecuatoriana y cocina 100% al carbón",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
