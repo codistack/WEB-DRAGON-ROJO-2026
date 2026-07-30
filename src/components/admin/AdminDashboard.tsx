@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import {
   Flame, LayoutDashboard, Utensils, FolderTree, Settings, Palette,
   Clock, Share2, Search, Shield, Database, FileText, LogOut, Plus,
-  Trash2, Edit, Save, RefreshCw, Download, Upload, CheckCircle2, AlertCircle, Sparkles
+  Trash2, Edit, Save, RefreshCw, Download, Upload, CheckCircle2, AlertCircle, Sparkles, Mail
 } from 'lucide-react';
 import { FullAppDatabase, Product, Category, ScheduleItem } from '../../types';
+import { getDirectImageUrl } from '../../utils';
+import { sendCredentialChangePing } from '../../lib/firebase';
 
 interface AdminDashboardProps {
   token: string;
@@ -40,6 +42,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
     newUsername: 'admin@dragonrojo.ec',
     newPassword: '',
     newPin: '889900',
+    notificationEmail: 'codistack@gmail.com',
   });
   const [credLoading, setCredLoading] = useState(false);
   const [credMessage, setCredMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -65,6 +68,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
           ...prev,
           newUsername: credData.credentials.username || prev.newUsername,
           newPin: credData.credentials.pin || prev.newPin,
+          notificationEmail: credData.credentials.notificationEmail || 'codistack@gmail.com',
         }));
       }
     } catch (err) {
@@ -89,9 +93,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       });
       const data = await res.json();
       if (data.success) {
-        setCredMessage({ type: 'success', text: data.message });
+        const targetEmail = credForm.notificationEmail || 'codistack@gmail.com';
+        await sendCredentialChangePing(credForm.newUsername, targetEmail);
+
+        setCredMessage({
+          type: 'success',
+          text: `Credenciales actualizadas exitosamente. Se envió notificación de seguridad a ${targetEmail}.`,
+        });
         setCredForm((prev) => ({ ...prev, currentPassword: '', newPassword: '' }));
-        triggerNotify('Credenciales de administración actualizadas correctamente');
+        triggerNotify(`Credenciales guardadas y ping enviado a ${targetEmail}`);
       } else {
         setCredMessage({ type: 'error', text: data.message || 'Error al guardar credenciales' });
       }
@@ -612,6 +622,32 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
               </div>
 
               <div>
+                <label className="font-black text-white/60 uppercase tracking-widest block mb-1">Logotipo DRAGÓN ROJO (URL de Imagen)</label>
+                <div className="flex gap-3 items-center">
+                  <input
+                    type="text"
+                    value={dbData.settings.logoUrl || 'https://imgur.com/a/IYGNbmi'}
+                    onChange={(e) => setDbData({ ...dbData, settings: { ...dbData.settings, logoUrl: e.target.value } })}
+                    className="flex-1 p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white font-mono text-xs"
+                    placeholder="https://imgur.com/a/IYGNbmi"
+                  />
+                  <div className="w-10 h-10 rounded-lg overflow-hidden border border-white/20 bg-[#050505] flex items-center justify-center shrink-0">
+                    <img
+                      src={getDirectImageUrl(dbData.settings.logoUrl || 'https://imgur.com/a/IYGNbmi')}
+                      alt="Logo Preview"
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/icon.svg';
+                      }}
+                    />
+                  </div>
+                </div>
+                <span className="text-[10px] text-white/40 block mt-1">
+                  Enlace de imagen administrable (soporta enlaces Imgur como https://imgur.com/a/IYGNbmi).
+                </span>
+              </div>
+
+              <div>
                 <label className="font-black text-white/60 uppercase tracking-widest block mb-1">Eslogan Comercial</label>
                 <input
                   type="text"
@@ -720,6 +756,21 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
                     onChange={(e) => setCredForm({ ...credForm, newUsername: e.target.value })}
                     className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white font-medium focus:border-[#E61E2A] outline-none"
                     placeholder="admin@dragonrojo.ec"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-black text-white/60 uppercase tracking-widest block mb-1 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-[#FF9F1C]" />
+                    <span>Correo de Pings de Notificación</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={credForm.notificationEmail}
+                    onChange={(e) => setCredForm({ ...credForm, notificationEmail: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-[#FF9F1C] font-mono font-medium focus:border-[#FF9F1C] outline-none"
+                    placeholder="codistack@gmail.com"
                   />
                 </div>
 

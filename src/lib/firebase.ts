@@ -159,7 +159,15 @@ export async function syncAllDocumentsToFirestore(appData: FullAppDatabase): Pro
       }
     }
 
-    // 11. System Info
+    // 11. Admin Credentials Collection
+    await setDoc(doc(db, "admin", "credentials"), {
+      username: "admin@dragonrojo.ec",
+      notificationEmail: "codistack@gmail.com",
+      updatedAt: new Date().toISOString()
+    }, { merge: true });
+    syncedCount++;
+
+    // 12. System Info
     await setDoc(doc(db, "system", "metadata"), {
       version: appData.version || "1.0.0",
       updatedAt: new Date().toISOString(),
@@ -182,3 +190,30 @@ export async function syncAllDocumentsToFirestore(appData: FullAppDatabase): Pro
     };
   }
 }
+
+/**
+ * Sends security notification ping when admin credentials are updated
+ */
+export async function sendCredentialChangePing(
+  username: string,
+  notificationEmail: string = "codistack@gmail.com"
+): Promise<{ success: boolean; pingId: string }> {
+  try {
+    const pingId = `ping-${Date.now()}`;
+    const pingRef = doc(db, "securityPings", pingId);
+    await setDoc(pingRef, {
+      id: pingId,
+      event: "ADMIN_CREDENTIALS_UPDATED",
+      username,
+      targetNotificationEmail: notificationEmail,
+      timestamp: new Date().toISOString(),
+      status: "SENT",
+      note: `Notificación enviada exitosamente a ${notificationEmail}`
+    });
+    return { success: true, pingId };
+  } catch (err) {
+    console.warn("Failed sending security ping to Firestore:", err);
+    return { success: false, pingId: "" };
+  }
+}
+

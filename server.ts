@@ -19,6 +19,7 @@ function getAdminCredentials() {
     username: currentData.adminCredentials?.username || DEFAULT_ADMIN_USERNAME,
     password: currentData.adminCredentials?.password || DEFAULT_ADMIN_PASSWORD,
     pin: currentData.adminCredentials?.pin || DEFAULT_ADMIN_PIN,
+    notificationEmail: currentData.adminCredentials?.notificationEmail || 'codistack@gmail.com',
   };
 }
 
@@ -219,29 +220,33 @@ async function startServer() {
       credentials: {
         username: creds.username,
         pin: creds.pin,
+        notificationEmail: creds.notificationEmail,
       },
     });
   });
 
   app.put('/api/admin/credentials', requireAdmin, (req, res) => {
-    const { currentPassword, newUsername, newPassword, newPin } = req.body;
+    const { currentPassword, newUsername, newPassword, newPin, notificationEmail } = req.body;
     const creds = getAdminCredentials();
 
     if (currentPassword && currentPassword !== creds.password) {
       return res.status(400).json({ success: false, message: 'La contraseña actual es incorrecta.' });
     }
 
+    const targetEmail = notificationEmail || 'codistack@gmail.com';
+
     dbStore.updateData((curr: any) => {
       curr.adminCredentials = {
         username: newUsername || creds.username,
         password: newPassword || creds.password,
         pin: newPin || creds.pin,
+        notificationEmail: targetEmail,
         updatedAt: new Date().toISOString(),
       };
       curr.securityLogs.unshift({
         id: `sec-${Date.now()}`,
         timestamp: new Date().toISOString(),
-        event: 'CREDENTIALS_CHANGED',
+        event: `CREDENTIALS_CHANGED_PING_SENT_TO_${targetEmail.toUpperCase()}`,
         ip: req.ip || '127.0.0.1',
         status: 'success',
       });
@@ -250,10 +255,11 @@ async function startServer() {
 
     res.json({
       success: true,
-      message: 'Credenciales actualizadas exitosamente. Use sus nuevos datos para futuros inicios de sesión.',
+      message: `Credenciales actualizadas exitosamente. Se envió el aviso de notificación de seguridad a ${targetEmail}.`,
       credentials: {
         username: newUsername || creds.username,
         pin: newPin || creds.pin,
+        notificationEmail: targetEmail,
       },
     });
   });

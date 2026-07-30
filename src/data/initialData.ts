@@ -7,7 +7,7 @@ export const INITIAL_DATABASE: FullAppDatabase = {
     name: 'Dragón Rojo',
     slogan: 'Gastronomía Típica y Cocina 100% al Carbón',
     description: 'El auténtico sabor del Cuy Asado al Carbón, Pollo a la Brasa y Tradición Criolla Ecuatoriana. Sabor ancestral preparado a fuego lento con leña y carbón de eucalipto.',
-    logoUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=300&q=80',
+    logoUrl: 'https://imgur.com/a/IYGNbmi',
     faviconUrl: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=64&q=80',
     phone: '+593 99 123 4567',
     whatsapp: '+593991234567',

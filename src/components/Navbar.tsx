@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, MapPin, Phone, MessageCircle, Menu, X, Sun, Moon, Lock } from 'lucide-react';
+import { Flame, MapPin, Phone, Menu, X, Sun, Moon, Lock } from 'lucide-react';
 import { RestaurantSettings } from '../types';
+import { getDirectImageUrl } from '../utils';
 
 interface NavbarProps {
   settings: RestaurantSettings;
@@ -41,6 +42,8 @@ export const Navbar: React.FC<NavbarProps> = ({
     { name: 'Testimonios', href: '#testimonios' },
   ];
 
+  const logoSrc = getDirectImageUrl(settings.logoUrl || 'https://imgur.com/a/IYGNbmi');
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -52,8 +55,17 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
         {/* Logo */}
         <a href="#inicio" className="flex items-center gap-3 group">
-          <div className="w-10 h-10 bg-[#E61E2A] rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(230,30,42,0.4)] group-hover:scale-105 transition-transform">
-            <span className="text-xl font-black text-black">DR</span>
+          <div className="w-10 h-10 bg-[#E61E2A] rounded-xl overflow-hidden flex items-center justify-center border border-[#E61E2A]/50 shadow-[0_0_20px_rgba(230,30,42,0.4)] group-hover:scale-105 transition-transform shrink-0">
+            <img
+              src={logoSrc}
+              alt="Dragón Rojo Logo"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                // Fallback if direct image fails
+                (e.target as HTMLImageElement).onerror = null;
+                (e.target as HTMLImageElement).src = '/icon.svg';
+              }}
+            />
           </div>
           <div>
             <span className="text-2xl font-black tracking-tighter uppercase italic text-white block leading-none">
@@ -156,24 +168,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               {link.name}
             </a>
           ))}
-          <div className="pt-3 border-t border-zinc-800/80 grid grid-cols-2 gap-2">
+          <div className="pt-3 border-t border-zinc-800/80">
             <a
               href={settings.googleMapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-red-600 text-white font-bold text-xs"
+              className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-red-600 text-white font-bold text-xs w-full"
             >
               <MapPin className="w-4 h-4" />
-              <span>Cómo Llegar</span>
-            </a>
-            <a
-              href={`https://wa.me/${settings.whatsapp.replace(/\+/g, '')}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs"
-            >
-              <MessageCircle className="w-4 h-4" />
-              <span>WhatsApp</span>
+              <span>Cómo Llegar (Ubicación)</span>
             </a>
           </div>
         </div>

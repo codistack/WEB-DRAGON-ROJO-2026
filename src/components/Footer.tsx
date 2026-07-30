@@ -23,34 +23,56 @@ export const Footer: React.FC<FooterProps> = ({ settings, socials, fullData }) =
   const [syncing, setSyncing] = useState(false);
   const [syncNotice, setSyncNotice] = useState<string | null>(null);
 
-  const checkConnection = async () => {
+  const checkAndAutoSync = async () => {
     setFirestoreStatus(prev => ({ ...prev, loading: true }));
     const status: FirestoreStatus = await testFirestoreConnection();
-    setFirestoreStatus({
-      loading: false,
-      connected: status.connected,
-      message: status.message
-    });
 
-    // Auto-sync documents if connected and fullData is available
-    if (status.connected && fullData) {
-      handleAutoSync(fullData);
-    }
-  };
-
-  const handleAutoSync = async (dataToSync: FullAppDatabase) => {
-    setSyncing(true);
-    const res = await syncAllDocumentsToFirestore(dataToSync);
-    setSyncing(false);
-    if (res.success) {
-      setSyncNotice(`Sincronización activa: ${res.syncedCount} documentos guardados en Firestore.`);
+    if (status.connected) {
+      if (fullData) {
+        setSyncing(true);
+        const res = await syncAllDocumentsToFirestore(fullData);
+        setSyncing(false);
+        if (res.success) {
+          setFirestoreStatus({
+            loading: false,
+            connected: true,
+            message: "Conexión establecida con el servidor Firestore"
+          });
+          setSyncNotice(`Sincronizado automáticamente (${res.syncedCount} docs)`);
+        } else {
+          setFirestoreStatus({
+            loading: false,
+            connected: false,
+            message: "No existe conexión con el servidor Firestore"
+          });
+          setSyncNotice(`Fallo de sincronización: ${res.message}`);
+        }
+      } else {
+        setFirestoreStatus({
+          loading: false,
+          connected: true,
+          message: "Conexión establecida con el servidor Firestore"
+        });
+      }
     } else {
-      setSyncNotice(`Error al sincronizar: ${res.message}`);
+      setFirestoreStatus({
+        loading: false,
+        connected: false,
+        message: "No existe conexión con el servidor Firestore"
+      });
+      setSyncNotice("Sin conexión con Firestore. Reintentando automáticamente...");
     }
   };
 
   useEffect(() => {
-    checkConnection();
+    checkAndAutoSync();
+
+    // Automatic polling interval to restore connection if lost
+    const retryTimer = setInterval(() => {
+      checkAndAutoSync();
+    }, 10000);
+
+    return () => clearInterval(retryTimer);
   }, [fullData]);
 
   return (
@@ -186,19 +208,9 @@ export const Footer: React.FC<FooterProps> = ({ settings, socials, fullData }) =
 
           <div className="flex items-center gap-2 text-[11px]">
             {syncNotice && (
-              <span className="text-white/70 font-mono italic hidden lg:inline-block">
+              <span className="text-white/60 font-mono italic">
                 {syncNotice}
               </span>
-            )}
-            {fullData && (
-              <button
-                onClick={() => handleAutoSync(fullData)}
-                disabled={syncing}
-                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black uppercase text-[10px] tracking-wider flex items-center gap-1.5 transition-all disabled:opacity-50"
-              >
-                <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin text-[#FF9F1C]' : ''}`} />
-                <span>{syncing ? 'Sincronizando...' : 'Re-sincronizar Base de Datos'}</span>
-              </button>
             )}
           </div>
         </div>
