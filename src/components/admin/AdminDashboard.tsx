@@ -4,7 +4,8 @@ import {
   Clock, Share2, Search, Shield, Database, FileText, LogOut, Plus,
   Trash2, Edit, Save, RefreshCw, Download, Upload, CheckCircle2, AlertCircle, Sparkles, Mail
 } from 'lucide-react';
-import { FullAppDatabase, Product, Category, ScheduleItem } from '../../types';
+import { FullAppDatabase, Product, Category, ScheduleItem, ChefCarouselItem } from '../../types';
+import { INITIAL_DATABASE } from '../../data/initialData';
 import { getDirectImageUrl } from '../../utils';
 import { sendCredentialChangePing } from '../../lib/firebase';
 
@@ -18,6 +19,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
     | 'overview'
     | 'products'
     | 'categories'
+    | 'chefCarousel'
     | 'settings'
     | 'theme'
     | 'schedules'
@@ -35,6 +37,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
   // Form states
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [newProdCategory, setNewProdCategory] = useState<string>('');
+  const [editingChefItem, setEditingChefItem] = useState<Partial<ChefCarouselItem> | null>(null);
 
   // Credentials Change State
   const [credForm, setCredForm] = useState({
@@ -54,8 +57,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success) {
+      if (data.success && data.data) {
         setDbData(data.data);
+      } else {
+        // Fallback to public endpoint or initial seed
+        const pubRes = await fetch('/api/public/data');
+        const pubData = await pubRes.json();
+        if (pubData.success && pubData.data) {
+          setDbData(pubData.data);
+        } else {
+          setDbData(INITIAL_DATABASE);
+        }
       }
 
       // Fetch current admin credentials
@@ -72,7 +84,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         }));
       }
     } catch (err) {
-      console.error('Error loading admin data:', err);
+      console.error('Error loading admin data, applying fallback seed:', err);
+      setDbData(INITIAL_DATABASE);
     } finally {
       setLoading(false);
     }
@@ -188,6 +201,68 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
     }
   };
 
+  // Chef Carousel Handlers
+  const handleSaveChefItem = async () => {
+    if (!dbData || !editingChefItem) return;
+    let items = dbData.chefCarousel || [];
+    if (editingChefItem.id) {
+      items = items.map((item) => (item.id === editingChefItem.id ? (editingChefItem as ChefCarouselItem) : item));
+    } else {
+      const newItem: ChefCarouselItem = {
+        id: `chef-${Date.now()}`,
+        title: editingChefItem.title || 'Nueva Recomendación',
+        subtitle: editingChefItem.subtitle || 'Especialidad',
+        description: editingChefItem.description || '',
+        price: Number(editingChefItem.price) || 0,
+        badge: editingChefItem.badge || '🔥 RECOMENDACIÓN DEL CHEF',
+        imageUrl: editingChefItem.imageUrl || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+        status: editingChefItem.status || 'active',
+      };
+      items = [...items, newItem];
+    }
+
+    try {
+      const res = await fetch('/api/admin/chef-carousel', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ chefCarousel: items }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDbData({ ...dbData, chefCarousel: items });
+        setEditingChefItem(null);
+        triggerNotify('Carrusel del Chef actualizado');
+      }
+    } catch (err) {
+      triggerNotify('Error al guardar ítem del carrusel');
+    }
+  };
+
+  const handleDeleteChefItem = async (id: string) => {
+    if (!dbData) return;
+    const items = (dbData.chefCarousel || []).filter((item) => item.id !== id);
+    try {
+      const res = await fetch('/api/admin/chef-carousel', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ chefCarousel: items }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setDbData({ ...dbData, chefCarousel: items });
+        triggerNotify('Ítem eliminado del carrusel');
+      }
+    } catch (err) {
+      triggerNotify('Error al eliminar ítem');
+    }
+  };
+
   // Seed Reset Handler
   const handleResetSeed = async () => {
     if (!confirm('¿Restaurar la base de datos completa al estado Semilla oficial? Esto sobrescribirá los datos actuales.')) return;
@@ -263,6 +338,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
             >
               <FolderTree className="w-4 h-4" />
               <span>Categorías</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('chefCarousel')}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-black uppercase tracking-wider transition-colors ${
+                activeTab === 'chefCarousel' ? 'bg-[#E61E2A] text-white shadow-[0_0_15px_rgba(230,30,42,0.3)]' : 'text-white/60 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 text-amber-400" />
+              <span>Carrusel del Chef</span>
             </button>
 
             <button
@@ -592,6 +677,195 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(p.id)}
+                          className="p-2 rounded-lg bg-red-950/40 text-red-400 hover:bg-red-900/40"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* TAB: CHEF CAROUSEL MANAGEMENT */}
+        {activeTab === 'chefCarousel' && (
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+              <div>
+                <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-amber-400" />
+                  Carrusel "Recomendación del Chef"
+                </h3>
+                <p className="text-xs text-white/50">
+                  Administra las imágenes y tarjetas que rotan automáticamente en la sección principal superior del menú.
+                </p>
+              </div>
+              <button
+                onClick={() =>
+                  setEditingChefItem({
+                    title: '',
+                    subtitle: 'Especialidad Tradicional',
+                    description: '',
+                    price: 28,
+                    badge: '🔥 RECOMENDACIÓN DEL CHEF',
+                    imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1024&q=80',
+                    status: 'active',
+                  })
+                }
+                className="px-4 py-2.5 rounded-xl bg-[#E61E2A] hover:bg-[#c71823] text-white text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-[0_0_15px_rgba(230,30,42,0.3)] transition-all"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Agregar Nuevo Ítem</span>
+              </button>
+            </div>
+
+            {/* Chef Item Form Modal / In-line Editor */}
+            {editingChefItem && (
+              <div className="p-6 rounded-2xl bg-[#0a0a0a] border border-[#E61E2A]/40 space-y-4 animate-fadeIn shadow-2xl">
+                <h4 className="text-sm font-black text-amber-400 uppercase tracking-widest">
+                  {editingChefItem.id ? 'Editar Ítem del Carrusel' : 'Crear Nuevo Ítem del Carrusel'}
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                  <div>
+                    <label className="font-black text-white/60 uppercase tracking-widest block mb-1">Título del Plato</label>
+                    <input
+                      type="text"
+                      value={editingChefItem.title || ''}
+                      onChange={(e) => setEditingChefItem({ ...editingChefItem, title: e.target.value })}
+                      placeholder="Ej: Cuy Asado al Carbón"
+                      className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-black text-white/60 uppercase tracking-widest block mb-1">Subtítulo / Etiqueta</label>
+                    <input
+                      type="text"
+                      value={editingChefItem.subtitle || ''}
+                      onChange={(e) => setEditingChefItem({ ...editingChefItem, subtitle: e.target.value })}
+                      placeholder="Ej: Especialidad Tradicional Ancestral"
+                      className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-black text-white/60 uppercase tracking-widest block mb-1">Precio ($ USD)</label>
+                    <input
+                      type="number"
+                      step="0.50"
+                      value={editingChefItem.price || 0}
+                      onChange={(e) => setEditingChefItem({ ...editingChefItem, price: parseFloat(e.target.value) })}
+                      className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-black text-white/60 uppercase tracking-widest block mb-1">Insignia / Badge Superior</label>
+                    <input
+                      type="text"
+                      value={editingChefItem.badge || ''}
+                      onChange={(e) => setEditingChefItem({ ...editingChefItem, badge: e.target.value })}
+                      placeholder="Ej: 🔥 RECOMENDACIÓN DEL CHEF"
+                      className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="font-black text-white/60 uppercase tracking-widest block mb-1">Descripción Breve</label>
+                    <textarea
+                      rows={2}
+                      value={editingChefItem.description || ''}
+                      onChange={(e) => setEditingChefItem({ ...editingChefItem, description: e.target.value })}
+                      placeholder="Breve descripción apetitosa..."
+                      className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white font-light"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <label className="font-black text-white/60 uppercase tracking-widest block mb-1">URL de la Imagen (Formatos JPG, PNG, Imgur)</label>
+                    <div className="flex gap-3 items-center">
+                      <input
+                        type="text"
+                        value={editingChefItem.imageUrl || ''}
+                        onChange={(e) => setEditingChefItem({ ...editingChefItem, imageUrl: e.target.value })}
+                        className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white"
+                      />
+                      {editingChefItem.imageUrl && (
+                        <img
+                          src={getDirectImageUrl(editingChefItem.imageUrl)}
+                          alt="Previsualización"
+                          className="w-12 h-12 rounded-lg object-cover border border-white/20 shrink-0"
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-3">
+                  <button
+                    onClick={() => setEditingChefItem(null)}
+                    className="px-4 py-2 rounded-lg bg-[#050505] text-white/60 hover:text-white text-xs font-black uppercase tracking-widest"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={handleSaveChefItem}
+                    className="px-6 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-widest shadow-lg"
+                  >
+                    Guardar Cambios
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Chef Items Table */}
+            <div className="rounded-2xl bg-[#0a0a0a] border border-white/10 overflow-hidden">
+              <table className="w-full text-left text-xs text-white/80">
+                <thead className="bg-[#050505] text-white/40 uppercase font-black border-b border-white/10 tracking-widest">
+                  <tr>
+                    <th className="p-4">Imagen y Título</th>
+                    <th className="p-4">Subtítulo / Badge</th>
+                    <th className="p-4">Precio</th>
+                    <th className="p-4">Estado</th>
+                    <th className="p-4 text-right">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {(dbData.chefCarousel || []).map((item) => (
+                    <tr key={item.id} className="hover:bg-white/5 transition-colors">
+                      <td className="p-4 font-black text-white uppercase flex items-center gap-3 tracking-tight">
+                        <img
+                          src={getDirectImageUrl(item.imageUrl)}
+                          alt={item.title}
+                          className="w-12 h-12 rounded-lg object-cover border border-white/10 contrast-110 shrink-0"
+                        />
+                        <div>
+                          <span className="block font-black text-white">{item.title}</span>
+                          <span className="block text-[10px] text-white/40 font-normal line-clamp-1">{item.description}</span>
+                        </div>
+                      </td>
+                      <td className="p-4">
+                        <span className="block text-amber-400 font-bold text-[11px]">{item.badge}</span>
+                        <span className="block text-white/50 text-[10px]">{item.subtitle}</span>
+                      </td>
+                      <td className="p-4 font-black text-[#E61E2A]">${item.price.toFixed(2)}</td>
+                      <td className="p-4">
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-400">
+                          {item.status || 'activo'}
+                        </span>
+                      </td>
+                      <td className="p-4 text-right space-x-2">
+                        <button
+                          onClick={() => setEditingChefItem(item)}
+                          className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-[#FF9F1C]"
+                        >
+                          <Edit className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteChefItem(item.id)}
                           className="p-2 rounded-lg bg-red-950/40 text-red-400 hover:bg-red-900/40"
                         >
                           <Trash2 className="w-3.5 h-3.5" />

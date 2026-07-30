@@ -463,6 +463,48 @@ export const INITIAL_DATABASE: FullAppDatabase = {
       status: 'active',
     },
   ],
+  chefCarousel: [
+    {
+      id: 'chef-1',
+      title: 'Cuy Asado al Carbón',
+      subtitle: 'Especialidad Tradicional Ancestral',
+      description: 'Cuy entero preparado lentamente a las brasas de eucalipto. Acompañado con papas doradas en salsa de maní artesanal, berro fresco y ají de la casa.',
+      price: 28.00,
+      badge: '🔥 RECOMENDACIÓN DEL CHEF',
+      imageUrl: 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1024&q=80',
+      status: 'active'
+    },
+    {
+      id: 'chef-2',
+      title: 'Pollo a la Brasa al Carbón',
+      subtitle: 'Sabor Cítrico y Ahumado Insuperable',
+      description: 'Pollo criollo entero marinado en chicha de jora, ajos de campo y especias. Piel dorada ultra crocante y carne súper jugosa.',
+      price: 16.00,
+      badge: '⭐ FAVORITO DE LA FAMILIA',
+      imageUrl: 'https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=1024&q=80',
+      status: 'active'
+    },
+    {
+      id: 'chef-3',
+      title: 'Caldo de Gallina Criolla',
+      subtitle: 'Sopa Revividora de Fuego Lento',
+      description: 'Infusión sanadora de 4 horas de cocción con yuca tierna, plátano verde, huevo duro entero y cilantro de huerto.',
+      price: 6.50,
+      badge: '🍲 TRADICIÓN DE CAMPO',
+      imageUrl: 'https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1024&q=80',
+      status: 'active'
+    },
+    {
+      id: 'chef-4',
+      title: 'Banquete Parrillero Dragón',
+      subtitle: 'Para Grupos y Celebraciones Especiales',
+      description: 'Incluye 1 Cuy entero al carbón + 1 Pollo al carbón + Jarra de Colada Morada o Chicha + Papas y Salsa de Maní Ilimitadas.',
+      price: 42.00,
+      badge: '👑 MEJOR OPCIÓN FAMILIAR',
+      imageUrl: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1024&q=80',
+      status: 'active'
+    }
+  ],
   schedules: [
     {
       id: 'sch-1',

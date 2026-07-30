@@ -102,6 +102,17 @@ export interface FAQ {
   category: string;
 }
 
+export interface ChefCarouselItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  price: number;
+  badge: string;
+  imageUrl: string;
+  status: 'active' | 'inactive';
+}
+
 export interface SocialLinks {
   facebook: string;
   instagram: string;
@@ -142,6 +153,7 @@ export interface FullAppDatabase {
   categories: Category[];
   products: Product[];
   offers: OfferCombo[];
+  chefCarousel?: ChefCarouselItem[];
   schedules: ScheduleItem[];
   testimonials: Testimonial[];
   gallery: GalleryItem[];

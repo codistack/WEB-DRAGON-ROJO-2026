@@ -14,6 +14,7 @@ import { FaqSection } from './components/FaqSection';
 import { Footer } from './components/Footer';
 import { DishDetailModal } from './components/DishDetailModal';
 import { PWAInstaller } from './components/PWAInstaller';
+import { BackToTop } from './components/BackToTop';
 import { AdminLogin } from './components/admin/AdminLogin';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { FullAppDatabase, Product } from './types';
@@ -51,6 +52,7 @@ export default function App() {
           categories: json.data.categories || prev.categories,
           products: json.data.products || prev.products,
           offers: json.data.offers || prev.offers,
+          chefCarousel: json.data.chefCarousel || prev.chefCarousel,
           schedules: json.data.schedules || prev.schedules,
           testimonials: json.data.testimonials || prev.testimonials,
           gallery: json.data.gallery || prev.gallery,
@@ -114,7 +116,7 @@ export default function App() {
 
       {/* Main Public Page Content */}
       <main className="relative z-10">
-        <Hero settings={data.settings} />
+        <Hero settings={data.settings} carouselItems={data.chefCarousel} />
 
         <FlavorQuiz
           products={data.products}
@@ -158,6 +160,9 @@ export default function App() {
 
       {/* PWA Installation & Offline Manager */}
       <PWAInstaller />
+
+      {/* Floating Red Dragon Back-to-Top Button */}
+      <BackToTop logoUrl={data.settings.logoUrl} />
     </div>
   );
 }
