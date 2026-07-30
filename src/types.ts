@@ -148,6 +148,17 @@ export interface SecurityLog {
   status: 'success' | 'failed' | 'blocked';
 }
 
+export interface HolidayNotice {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  badgeText: string;
+  message: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+}
+
 export interface FullAppDatabase {
   settings: RestaurantSettings;
   categories: Category[];
@@ -155,6 +166,7 @@ export interface FullAppDatabase {
   offers: OfferCombo[];
   chefCarousel?: ChefCarouselItem[];
   schedules: ScheduleItem[];
+  holidayNotices?: HolidayNotice[];
   testimonials: Testimonial[];
   gallery: GalleryItem[];
   faqs: FAQ[];

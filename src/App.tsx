@@ -54,6 +54,7 @@ export default function App() {
           offers: json.data.offers || prev.offers,
           chefCarousel: json.data.chefCarousel || prev.chefCarousel,
           schedules: json.data.schedules || prev.schedules,
+          holidayNotices: json.data.holidayNotices || prev.holidayNotices,
           testimonials: json.data.testimonials || prev.testimonials,
           gallery: json.data.gallery || prev.gallery,
           faqs: json.data.faqs || prev.faqs,
@@ -112,7 +113,7 @@ export default function App() {
       />
 
       {/* Sticky Mandatory Notice Bar */}
-      <NoticeBar noticeText={data.settings.noticeText} />
+      <NoticeBar noticeText={data.settings.noticeText} holidayNotices={data.holidayNotices} />
 
       {/* Main Public Page Content */}
       <main className="relative z-10">

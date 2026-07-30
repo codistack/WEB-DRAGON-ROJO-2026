@@ -62,7 +62,7 @@ export const Hero: React.FC<HeroProps> = ({ settings, carouselItems }) => {
     if (items.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % items.length);
-    }, 8000);
+    }, 12000); // 12 seconds for slow, smooth, subtle rotation
     return () => clearInterval(interval);
   }, [items.length]);
 
@@ -162,15 +162,15 @@ export const Hero: React.FC<HeroProps> = ({ settings, carouselItems }) => {
           <div className="lg:col-span-5 relative z-10">
             <div className="relative mx-auto max-w-md lg:max-w-none">
               {/* Outer Card frame with Carousel Controls */}
-              <div className="relative rounded-2xl overflow-hidden bg-[#050505] border border-[#E61E2A]/40 shadow-[0_20px_50px_rgba(0,0,0,0.9)] group transition-all duration-700 hover:border-[#E61E2A] min-h-[440px] sm:min-h-[500px]">
+              <div className="relative rounded-3xl overflow-hidden bg-[#050505] border border-[#E61E2A]/40 shadow-[0_25px_60px_rgba(0,0,0,0.95)] group transition-all duration-1000 hover:border-[#E61E2A] min-h-[500px] sm:min-h-[560px]">
                 <img
                   key={activeItem.id}
                   src={getDirectImageUrl(activeItem.imageUrl)}
                   alt={activeItem.title}
-                  className="w-full h-[440px] sm:h-[500px] object-cover contrast-125 transition-all duration-1000 ease-in-out scale-100 group-hover:scale-105"
+                  className="w-full h-[500px] sm:h-[560px] object-cover contrast-110 transition-all duration-1000 ease-out scale-100 group-hover:scale-105"
                 />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/30 pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/10 to-black/30 pointer-events-none" />
 
                 {/* Overlaid Badge */}
                 <div className="absolute top-4 left-4 z-20">
@@ -181,7 +181,7 @@ export const Hero: React.FC<HeroProps> = ({ settings, carouselItems }) => {
 
                 {/* Carousel Navigation Arrows */}
                 {items.length > 1 && (
-                  <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-black/75 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-lg">
+                  <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-black/80 backdrop-blur-md p-1.5 rounded-xl border border-white/10 shadow-xl">
                     <button
                       onClick={handlePrev}
                       className="p-1.5 rounded-lg hover:bg-white/20 text-white transition-colors"
@@ -202,25 +202,37 @@ export const Hero: React.FC<HeroProps> = ({ settings, carouselItems }) => {
                   </div>
                 )}
 
-                {/* Bottom Card details - Compact & Sleek */}
-                <div className="absolute bottom-3 left-3 right-3 bg-[#050505]/90 backdrop-blur-xl p-4 sm:p-5 border-l-4 border-[#E61E2A] shadow-2xl rounded-r-2xl border border-white/10">
-                  <h3 className="text-[#FF9F1C] text-[10px] font-black uppercase tracking-[0.2em] mb-1">
-                    {activeItem.subtitle || 'Especialidad Tradicional'}
-                  </h3>
-                  <h2 className="text-lg sm:text-2xl font-black uppercase tracking-tight text-white mb-1">
-                    {activeItem.title}
-                  </h2>
-                  <p className="text-white/80 text-xs italic mb-2 font-serif line-clamp-2 leading-relaxed">
+                {/* Bottom Card details - Sleek, Lowered & Subtle */}
+                <div className="absolute bottom-2 left-2 right-2 sm:bottom-3 sm:left-3 sm:right-3 bg-black/85 backdrop-blur-2xl p-4 sm:p-4 rounded-2xl border border-white/15 shadow-2xl space-y-2">
+                  <div className="flex justify-between items-start gap-2">
+                    <div>
+                      <span className="text-[#FF9F1C] text-[9px] font-black uppercase tracking-[0.2em] block">
+                        {activeItem.subtitle || 'Especialidad Tradicional'}
+                      </span>
+                      <h2 className="text-base sm:text-xl font-black uppercase tracking-tight text-white leading-tight">
+                        {activeItem.title}
+                      </h2>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <span className="text-xl sm:text-2xl font-black text-[#E61E2A] block leading-none">
+                        ${activeItem.price.toFixed(2)}
+                      </span>
+                      <span className="text-[9px] text-white/40 font-mono uppercase">USD</span>
+                    </div>
+                  </div>
+
+                  <p className="text-white/80 text-[11px] sm:text-xs font-light line-clamp-2 leading-snug">
                     {activeItem.description}
                   </p>
-                  <div className="flex justify-between items-center pt-2 border-t border-white/10">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-black text-[#E61E2A]">${activeItem.price.toFixed(2)}</span>
-                      <span className="text-[10px] text-white/40 font-mono">USD</span>
-                    </div>
-                    <span className="text-[10px] uppercase font-black text-emerald-400 tracking-widest flex items-center gap-1.5 bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-500/30">
+
+                  <div className="flex justify-between items-center pt-2 border-t border-white/10 text-[10px]">
+                    <span className="text-[#FF9F1C] font-bold uppercase tracking-widest flex items-center gap-1">
+                      <Sparkles className="w-3 h-3 text-[#FF9F1C]" />
+                      Receta Auténtica
+                    </span>
+                    <span className="uppercase font-black text-emerald-400 tracking-widest flex items-center gap-1.5 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-500/30">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                      A la Brasa al Momento
+                      Preparado al Carbón
                     </span>
                   </div>
                 </div>

@@ -528,6 +528,18 @@ export const INITIAL_DATABASE: FullAppDatabase = {
       note: 'Atención especial continua durante todos los feriados nacionales y locales.',
     },
   ],
+  holidayNotices: [
+    {
+      id: 'hn-1',
+      title: 'Atención Especial Feriados de Año Nuevo y Carnaval',
+      startDate: '2026-08-01',
+      endDate: '2026-12-31',
+      badgeText: '🎉 ATENCIÓN ESPECIAL FERIADOS',
+      message: 'Durante todos los feriados nacionales abrimos nuestras puertas desde las 08:00 AM con asado continuo de cuyes y pollos al carbón. Reservaciones exclusivamente presenciales por orden de llegada.',
+      status: 'active',
+      createdAt: new Date().toISOString(),
+    }
+  ],
   testimonials: [
     {
       id: 'test-1',

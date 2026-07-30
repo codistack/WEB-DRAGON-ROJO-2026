@@ -50,15 +50,17 @@ async function startServer() {
         success: true,
         data: {
           settings: data.settings,
-          categories: data.categories.filter((c) => c.visible),
-          products: data.products.filter((p) => p.status === 'active'),
-          offers: data.offers.filter((o) => o.status === 'active'),
-          schedules: data.schedules,
-          testimonials: data.testimonials,
-          gallery: data.gallery,
-          faqs: data.faqs,
-          socialLinks: data.socialLinks[0] || {},
-          seoMetadata: data.seoMetadata[0] || {},
+          categories: (data.categories || []).filter((c) => c.visible),
+          products: (data.products || []).filter((p) => p.status === 'active'),
+          offers: (data.offers || []).filter((o) => o.status === 'active'),
+          chefCarousel: (data.chefCarousel || []).filter((c) => c.status !== 'inactive'),
+          schedules: data.schedules || [],
+          holidayNotices: (data.holidayNotices || []).filter((hn) => hn.status === 'active'),
+          testimonials: data.testimonials || [],
+          gallery: data.gallery || [],
+          faqs: data.faqs || [],
+          socialLinks: (data.socialLinks && data.socialLinks[0]) || {},
+          seoMetadata: (data.seoMetadata && data.seoMetadata[0]) || {},
         },
       });
     } catch (error) {
@@ -345,22 +347,138 @@ async function startServer() {
     res.json({ success: true, message: 'Categoría eliminada' });
   });
 
+  // --- SCHEDULES CRUD ---
+  app.post('/api/admin/schedules', requireAdmin, (req, res) => {
+    const newSch = req.body;
+    newSch.id = newSch.id || `sch-${Date.now()}`;
+    dbStore.updateData((curr) => {
+      curr.schedules = curr.schedules || [];
+      curr.schedules.push(newSch);
+      return curr;
+    });
+    res.json({ success: true, schedule: newSch, schedules: dbStore.getData().schedules });
+  });
+
+  app.put('/api/admin/schedules/:id', requireAdmin, (req, res) => {
+    const { id } = req.params;
+    const update = req.body;
+    dbStore.updateData((curr) => {
+      curr.schedules = curr.schedules || [];
+      const idx = curr.schedules.findIndex((s) => s.id === id);
+      if (idx !== -1) {
+        curr.schedules[idx] = { ...curr.schedules[idx], ...update };
+      }
+      return curr;
+    });
+    res.json({ success: true, message: 'Horario actualizado con éxito', schedules: dbStore.getData().schedules });
+  });
+
+  app.delete('/api/admin/schedules/:id', requireAdmin, (req, res) => {
+    const { id } = req.params;
+    dbStore.updateData((curr) => {
+      curr.schedules = (curr.schedules || []).filter((s) => s.id !== id);
+      return curr;
+    });
+    res.json({ success: true, message: 'Horario eliminado', schedules: dbStore.getData().schedules });
+  });
+
   app.put('/api/admin/schedules', requireAdmin, (req, res) => {
     const { schedules } = req.body;
     dbStore.updateData((curr) => {
-      curr.schedules = schedules;
+      curr.schedules = schedules || [];
       return curr;
     });
     res.json({ success: true, schedules: dbStore.getData().schedules });
   });
 
+  // --- HOLIDAY NOTICES CRUD ---
+  app.post('/api/admin/holiday-notices', requireAdmin, (req, res) => {
+    const newNotice = req.body;
+    newNotice.id = newNotice.id || `hn-${Date.now()}`;
+    newNotice.createdAt = new Date().toISOString();
+    dbStore.updateData((curr) => {
+      curr.holidayNotices = curr.holidayNotices || [];
+      curr.holidayNotices.unshift(newNotice);
+      return curr;
+    });
+    res.json({ success: true, notice: newNotice, holidayNotices: dbStore.getData().holidayNotices });
+  });
+
+  app.put('/api/admin/holiday-notices/:id', requireAdmin, (req, res) => {
+    const { id } = req.params;
+    const update = req.body;
+    dbStore.updateData((curr) => {
+      curr.holidayNotices = curr.holidayNotices || [];
+      const idx = curr.holidayNotices.findIndex((hn) => hn.id === id);
+      if (idx !== -1) {
+        curr.holidayNotices[idx] = { ...curr.holidayNotices[idx], ...update };
+      }
+      return curr;
+    });
+    res.json({ success: true, message: 'Aviso de feriado actualizado', holidayNotices: dbStore.getData().holidayNotices });
+  });
+
+  app.delete('/api/admin/holiday-notices/:id', requireAdmin, (req, res) => {
+    const { id } = req.params;
+    dbStore.updateData((curr) => {
+      curr.holidayNotices = (curr.holidayNotices || []).filter((hn) => hn.id !== id);
+      return curr;
+    });
+    res.json({ success: true, message: 'Aviso de feriado eliminado', holidayNotices: dbStore.getData().holidayNotices });
+  });
+
+  // --- CHEF CAROUSEL CRUD ---
+  app.post('/api/admin/chef-carousel', requireAdmin, (req, res) => {
+    const newItem = req.body;
+    newItem.id = newItem.id || `chef-${Date.now()}`;
+    dbStore.updateData((curr) => {
+      curr.chefCarousel = curr.chefCarousel || [];
+      curr.chefCarousel.push(newItem);
+      return curr;
+    });
+    res.json({ success: true, item: newItem, chefCarousel: dbStore.getData().chefCarousel });
+  });
+
+  app.put('/api/admin/chef-carousel/:id', requireAdmin, (req, res) => {
+    const { id } = req.params;
+    const update = req.body;
+    dbStore.updateData((curr) => {
+      curr.chefCarousel = curr.chefCarousel || [];
+      const idx = curr.chefCarousel.findIndex((c) => c.id === id);
+      if (idx !== -1) {
+        curr.chefCarousel[idx] = { ...curr.chefCarousel[idx], ...update };
+      }
+      return curr;
+    });
+    res.json({ success: true, message: 'Ítem de carrusel actualizado', chefCarousel: dbStore.getData().chefCarousel });
+  });
+
+  app.delete('/api/admin/chef-carousel/:id', requireAdmin, (req, res) => {
+    const { id } = req.params;
+    dbStore.updateData((curr) => {
+      curr.chefCarousel = (curr.chefCarousel || []).filter((c) => c.id !== id);
+      return curr;
+    });
+    res.json({ success: true, message: 'Ítem de carrusel eliminado', chefCarousel: dbStore.getData().chefCarousel });
+  });
+
   app.put('/api/admin/chef-carousel', requireAdmin, (req, res) => {
     const { chefCarousel } = req.body;
     dbStore.updateData((curr) => {
-      curr.chefCarousel = chefCarousel;
+      curr.chefCarousel = chefCarousel || [];
       return curr;
     });
     res.json({ success: true, chefCarousel: dbStore.getData().chefCarousel });
+  });
+
+  // --- SECURITY & AUDIT LOGS ROUTE ---
+  app.get('/api/admin/logs', requireAdmin, (req, res) => {
+    const data = dbStore.getData();
+    res.json({
+      success: true,
+      auditLogs: data.auditLogs || [],
+      securityLogs: data.securityLogs || [],
+    });
   });
 
   app.put('/api/admin/socials', requireAdmin, (req, res) => {

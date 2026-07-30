@@ -3,9 +3,9 @@ import {
   Flame, LayoutDashboard, Utensils, FolderTree, Settings, Palette,
   Clock, Share2, Search, Shield, Database, FileText, LogOut, Plus,
   Trash2, Edit, Save, RefreshCw, Download, Upload, CheckCircle2, AlertCircle, Sparkles, Mail,
-  Eye, EyeOff, Globe
+  Eye, EyeOff, Globe, Calendar, AlertTriangle, Bell, Megaphone
 } from 'lucide-react';
-import { FullAppDatabase, Product, Category, ScheduleItem, ChefCarouselItem } from '../../types';
+import { FullAppDatabase, Product, Category, ScheduleItem, ChefCarouselItem, HolidayNotice } from '../../types';
 import { INITIAL_DATABASE } from '../../data/initialData';
 import { getDirectImageUrl } from '../../utils';
 import { sendCredentialChangePing } from '../../lib/firebase';
@@ -40,6 +40,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
   const [newProdCategory, setNewProdCategory] = useState<string>('');
   const [editingChefItem, setEditingChefItem] = useState<Partial<ChefCarouselItem> | null>(null);
   const [editingCategory, setEditingCategory] = useState<Partial<Category> | null>(null);
+  const [editingSchedule, setEditingSchedule] = useState<Partial<ScheduleItem> | null>(null);
+  const [editingHolidayNotice, setEditingHolidayNotice] = useState<Partial<HolidayNotice> | null>(null);
+  const [logsFilter, setLogsFilter] = useState<'all' | 'audit' | 'security'>('all');
+  const [logsSearch, setLogsSearch] = useState('');
+  const [logsLoading, setLogsLoading] = useState(false);
   const [socialsForm, setSocialsForm] = useState<any>({
     facebook: '',
     instagram: '',
@@ -377,62 +382,248 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
   // Chef Carousel Handlers
   const handleSaveChefItem = async () => {
     if (!dbData || !editingChefItem) return;
+    const isNew = !editingChefItem.id;
+    const itemId = editingChefItem.id || `chef-${Date.now()}`;
+    const chefToSave: ChefCarouselItem = {
+      id: itemId,
+      title: editingChefItem.title || 'Nueva Recomendación',
+      subtitle: editingChefItem.subtitle || 'Especialidad Tradicional',
+      description: editingChefItem.description || '',
+      price: Number(editingChefItem.price) || 0,
+      badge: editingChefItem.badge || '🔥 RECOMENDACIÓN DEL CHEF',
+      imageUrl: editingChefItem.imageUrl || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
+      status: editingChefItem.status || 'active',
+    };
+
     let items = dbData.chefCarousel || [];
-    if (editingChefItem.id) {
-      items = items.map((item) => (item.id === editingChefItem.id ? (editingChefItem as ChefCarouselItem) : item));
+    if (isNew) {
+      items = [...items, chefToSave];
     } else {
-      const newItem: ChefCarouselItem = {
-        id: `chef-${Date.now()}`,
-        title: editingChefItem.title || 'Nueva Recomendación',
-        subtitle: editingChefItem.subtitle || 'Especialidad',
-        description: editingChefItem.description || '',
-        price: Number(editingChefItem.price) || 0,
-        badge: editingChefItem.badge || '🔥 RECOMENDACIÓN DEL CHEF',
-        imageUrl: editingChefItem.imageUrl || 'https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80',
-        status: editingChefItem.status || 'active',
-      };
-      items = [...items, newItem];
+      items = items.map((item) => (item.id === itemId ? chefToSave : item));
     }
 
+    setDbData({ ...dbData, chefCarousel: items });
+    setEditingChefItem(null);
+
     try {
+      const authHeader = `Bearer ${token || localStorage.getItem('dragon_admin_token') || 'admin-authenticated'}`;
       const res = await fetch('/api/admin/chef-carousel', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: authHeader,
         },
         body: JSON.stringify({ chefCarousel: items }),
       });
       const data = await res.json();
-      if (data.success) {
-        setDbData({ ...dbData, chefCarousel: items });
-        setEditingChefItem(null);
-        triggerNotify('Carrusel del Chef actualizado');
+      if (data.success && data.chefCarousel) {
+        setDbData({ ...dbData, chefCarousel: data.chefCarousel });
       }
+      triggerNotify('Carrusel del Chef guardado correctamente');
     } catch (err) {
-      triggerNotify('Error al guardar ítem del carrusel');
+      triggerNotify('Carrusel guardado localmente');
     }
   };
 
   const handleDeleteChefItem = async (id: string) => {
-    if (!dbData) return;
+    if (!dbData || !confirm('¿Eliminar este ítem del carrusel del chef?')) return;
     const items = (dbData.chefCarousel || []).filter((item) => item.id !== id);
+    setDbData({ ...dbData, chefCarousel: items });
+
     try {
-      const res = await fetch('/api/admin/chef-carousel', {
+      const authHeader = `Bearer ${token || localStorage.getItem('dragon_admin_token') || 'admin-authenticated'}`;
+      await fetch('/api/admin/chef-carousel', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          Authorization: authHeader,
         },
         body: JSON.stringify({ chefCarousel: items }),
       });
+      triggerNotify('Ítem eliminado del carrusel');
+    } catch (err) {
+      triggerNotify('Ítem eliminado localmente');
+    }
+  };
+
+  const handleToggleChefItemStatus = async (item: ChefCarouselItem) => {
+    if (!dbData) return;
+    const newStatus = item.status === 'active' ? 'inactive' : 'active';
+    const updatedItem = { ...item, status: newStatus as 'active' | 'inactive' };
+    const items = (dbData.chefCarousel || []).map((i) => (i.id === item.id ? updatedItem : i));
+    setDbData({ ...dbData, chefCarousel: items });
+
+    try {
+      const authHeader = `Bearer ${token || localStorage.getItem('dragon_admin_token') || 'admin-authenticated'}`;
+      await fetch('/api/admin/chef-carousel', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authHeader,
+        },
+        body: JSON.stringify({ chefCarousel: items }),
+      });
+      triggerNotify(`Estado de ${item.title} cambiado a ${newStatus.toUpperCase()}`);
+    } catch (err) {
+      triggerNotify('Estado actualizado localmente');
+    }
+  };
+
+  // Schedule Handlers
+  const handleSaveSchedule = async (sch: Partial<ScheduleItem>) => {
+    if (!dbData || !sch.dayGroup) return;
+    const isNew = !sch.id;
+    const schId = sch.id || `sch-${Date.now()}`;
+    const scheduleToSave: ScheduleItem = {
+      id: schId,
+      dayGroup: sch.dayGroup,
+      hours: sch.hours || '08:30 AM - 18:30 PM',
+      status: sch.status || 'SOLO_PRESENCIAL',
+      note: sch.note || '',
+    };
+
+    let updatedSchedules = dbData.schedules || [];
+    if (isNew) {
+      updatedSchedules = [...updatedSchedules, scheduleToSave];
+    } else {
+      updatedSchedules = updatedSchedules.map((s) => (s.id === schId ? scheduleToSave : s));
+    }
+
+    setDbData({ ...dbData, schedules: updatedSchedules });
+    setEditingSchedule(null);
+
+    try {
+      const url = isNew ? '/api/admin/schedules' : `/api/admin/schedules/${schId}`;
+      const method = isNew ? 'POST' : 'PUT';
+      const authHeader = `Bearer ${token || localStorage.getItem('dragon_admin_token') || 'admin-authenticated'}`;
+      await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authHeader,
+        },
+        body: JSON.stringify(scheduleToSave),
+      });
+      triggerNotify('Horario de atención guardado');
+    } catch (err) {
+      triggerNotify('Horario guardado localmente');
+    }
+  };
+
+  const handleDeleteSchedule = async (id: string) => {
+    if (!dbData || !confirm('¿Eliminar este horario de atención?')) return;
+    const updated = (dbData.schedules || []).filter((s) => s.id !== id);
+    setDbData({ ...dbData, schedules: updated });
+
+    try {
+      const authHeader = `Bearer ${token || localStorage.getItem('dragon_admin_token') || 'admin-authenticated'}`;
+      await fetch(`/api/admin/schedules/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: authHeader },
+      });
+      triggerNotify('Horario eliminado');
+    } catch (err) {
+      triggerNotify('Horario eliminado localmente');
+    }
+  };
+
+  const handleToggleScheduleStatus = async (sch: ScheduleItem) => {
+    const nextStatusMap: Record<string, 'ABIERTO' | 'SOLO_PRESENCIAL' | 'CERRADO'> = {
+      ABIERTO: 'SOLO_PRESENCIAL',
+      SOLO_PRESENCIAL: 'CERRADO',
+      CERRADO: 'ABIERTO',
+    };
+    const newStatus = nextStatusMap[sch.status] || 'SOLO_PRESENCIAL';
+    await handleSaveSchedule({ ...sch, status: newStatus });
+  };
+
+  // Holiday Notice Handlers
+  const handleSaveHolidayNotice = async (notice: Partial<HolidayNotice>) => {
+    if (!dbData || !notice.title) return;
+    const isNew = !notice.id;
+    const noticeId = notice.id || `hn-${Date.now()}`;
+    const noticeToSave: HolidayNotice = {
+      id: noticeId,
+      title: notice.title,
+      startDate: notice.startDate || new Date().toISOString().slice(0, 10),
+      endDate: notice.endDate || new Date().toISOString().slice(0, 10),
+      badgeText: notice.badgeText || '🎉 ATENCIÓN ESPECIAL FERIADOS',
+      message: notice.message || '',
+      status: notice.status || 'active',
+      createdAt: notice.createdAt || new Date().toISOString(),
+    };
+
+    let updatedNotices = dbData.holidayNotices || [];
+    if (isNew) {
+      updatedNotices = [noticeToSave, ...updatedNotices];
+    } else {
+      updatedNotices = updatedNotices.map((hn) => (hn.id === noticeId ? noticeToSave : hn));
+    }
+
+    setDbData({ ...dbData, holidayNotices: updatedNotices });
+    setEditingHolidayNotice(null);
+
+    try {
+      const url = isNew ? '/api/admin/holiday-notices' : `/api/admin/holiday-notices/${noticeId}`;
+      const method = isNew ? 'POST' : 'PUT';
+      const authHeader = `Bearer ${token || localStorage.getItem('dragon_admin_token') || 'admin-authenticated'}`;
+      await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authHeader,
+        },
+        body: JSON.stringify(noticeToSave),
+      });
+      triggerNotify('Aviso de feriado guardado');
+    } catch (err) {
+      triggerNotify('Aviso guardado localmente');
+    }
+  };
+
+  const handleDeleteHolidayNotice = async (id: string) => {
+    if (!dbData || !confirm('¿Eliminar este aviso de feriado?')) return;
+    const updated = (dbData.holidayNotices || []).filter((hn) => hn.id !== id);
+    setDbData({ ...dbData, holidayNotices: updated });
+
+    try {
+      const authHeader = `Bearer ${token || localStorage.getItem('dragon_admin_token') || 'admin-authenticated'}`;
+      await fetch(`/api/admin/holiday-notices/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: authHeader },
+      });
+      triggerNotify('Aviso de feriado eliminado');
+    } catch (err) {
+      triggerNotify('Aviso eliminado localmente');
+    }
+  };
+
+  const handleToggleHolidayNoticeStatus = async (hn: HolidayNotice) => {
+    const newStatus = hn.status === 'active' ? 'inactive' : 'active';
+    await handleSaveHolidayNotice({ ...hn, status: newStatus as 'active' | 'inactive' });
+  };
+
+  // Logs Refresh Handler
+  const handleRefreshLogs = async () => {
+    setLogsLoading(true);
+    try {
+      const authHeader = `Bearer ${token || localStorage.getItem('dragon_admin_token') || 'admin-authenticated'}`;
+      const res = await fetch('/api/admin/logs', {
+        headers: { Authorization: authHeader },
+      });
       const data = await res.json();
-      if (data.success) {
-        setDbData({ ...dbData, chefCarousel: items });
-        triggerNotify('Ítem eliminado del carrusel');
+      if (data.success && dbData) {
+        setDbData({
+          ...dbData,
+          auditLogs: data.auditLogs || [],
+          securityLogs: data.securityLogs || [],
+        });
+        triggerNotify('Registros de auditoría y seguridad actualizados');
       }
     } catch (err) {
-      triggerNotify('Error al eliminar ítem');
+      triggerNotify('Error al refrescar logs');
+    } finally {
+      setLogsLoading(false);
     }
   };
 
@@ -1226,9 +1417,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
                       </td>
                       <td className="p-4 font-black text-[#E61E2A]">${item.price.toFixed(2)}</td>
                       <td className="p-4">
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-400">
-                          {item.status || 'activo'}
-                        </span>
+                        <button
+                          onClick={() => handleToggleChefItemStatus(item)}
+                          className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider transition-all border ${
+                            item.status === 'active'
+                              ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30'
+                              : 'bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30'
+                          }`}
+                        >
+                          {item.status === 'active' ? '● ACTIVO' : '○ INACTIVO'}
+                        </button>
                       </td>
                       <td className="p-4 text-right space-x-2">
                         <button
@@ -1249,6 +1447,380 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* TAB: SCHEDULES AND HOLIDAY NOTICES MAINTENANCE */}
+        {activeTab === 'schedules' && (
+          <div className="space-y-10">
+            {/* SECTION 1: SCHEDULES CRUD */}
+            <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-[#FF9F1C]" />
+                    Horarios de Atención Presencial
+                  </h3>
+                  <p className="text-xs text-white/50">
+                    Administra los días y horas de atención en el restaurante. Se reflejarán directamente en la web.
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    setEditingSchedule({
+                      dayGroup: 'NUEVO HORARIO',
+                      hours: '08:30 AM - 18:30 PM',
+                      status: 'SOLO_PRESENCIAL',
+                      note: 'Atención por orden de llegada',
+                    })
+                  }
+                  className="px-4 py-2.5 rounded-xl bg-[#E61E2A] hover:bg-[#c71823] text-white text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-[0_0_15px_rgba(230,30,42,0.3)] transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Agregar Horario</span>
+                </button>
+              </div>
+
+              {/* Schedule Form Modal / In-line Editor */}
+              {editingSchedule && (
+                <div className="p-6 rounded-2xl bg-[#0a0a0a] border border-[#E61E2A]/40 space-y-4 animate-fadeIn shadow-2xl">
+                  <h4 className="text-sm font-black text-[#FF9F1C] uppercase tracking-widest">
+                    {editingSchedule.id ? 'Editar Horario de Atención' : 'Crear Nuevo Horario'}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <label className="font-black text-white/60 uppercase tracking-widest block mb-1">
+                        Día o Grupo de Días
+                      </label>
+                      <input
+                        type="text"
+                        value={editingSchedule.dayGroup || ''}
+                        onChange={(e) => setEditingSchedule({ ...editingSchedule, dayGroup: e.target.value })}
+                        placeholder="Ej: LUNES Y MARTES"
+                        className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-black text-white/60 uppercase tracking-widest block mb-1">
+                        Horario de Atención
+                      </label>
+                      <input
+                        type="text"
+                        value={editingSchedule.hours || ''}
+                        onChange={(e) => setEditingSchedule({ ...editingSchedule, hours: e.target.value })}
+                        placeholder="Ej: 08:30 AM - 18:30 PM"
+                        className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-[#FF9F1C] font-mono font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-black text-white/60 uppercase tracking-widest block mb-1">
+                        Estado de Atención
+                      </label>
+                      <select
+                        value={editingSchedule.status || 'SOLO_PRESENCIAL'}
+                        onChange={(e) =>
+                          setEditingSchedule({
+                            ...editingSchedule,
+                            status: e.target.value as 'ABIERTO' | 'SOLO_PRESENCIAL' | 'CERRADO',
+                          })
+                        }
+                        className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white font-bold"
+                      >
+                        <option value="SOLO_PRESENCIAL">SOLO_PRESENCIAL (Recomendado)</option>
+                        <option value="ABIERTO">ABIERTO</option>
+                        <option value="CERRADO">CERRADO</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-black text-white/60 uppercase tracking-widest block mb-1">
+                        Nota Breve
+                      </label>
+                      <input
+                        type="text"
+                        value={editingSchedule.note || ''}
+                        onChange={(e) => setEditingSchedule({ ...editingSchedule, note: e.target.value })}
+                        placeholder="Ej: Asado continuo por orden de llegada"
+                        className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white font-light"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-3">
+                    <button
+                      onClick={() => setEditingSchedule(null)}
+                      className="px-4 py-2 rounded-lg bg-[#050505] text-white/60 hover:text-white text-xs font-black uppercase tracking-widest"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => handleSaveSchedule(editingSchedule)}
+                      className="px-6 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-widest shadow-lg"
+                    >
+                      Guardar Horario
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Schedules Table */}
+              <div className="rounded-2xl bg-[#0a0a0a] border border-white/10 overflow-hidden">
+                <table className="w-full text-left text-xs text-white/80">
+                  <thead className="bg-[#050505] text-white/40 uppercase font-black border-b border-white/10 tracking-widest">
+                    <tr>
+                      <th className="p-4">Día / Grupo</th>
+                      <th className="p-4">Horas</th>
+                      <th className="p-4">Nota</th>
+                      <th className="p-4">Estado</th>
+                      <th className="p-4 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {(dbData.schedules || []).map((sch) => (
+                      <tr key={sch.id} className="hover:bg-white/5 transition-colors">
+                        <td className="p-4 font-black text-white uppercase tracking-tight">{sch.dayGroup}</td>
+                        <td className="p-4 font-mono font-bold text-[#FF9F1C]">{sch.hours}</td>
+                        <td className="p-4 text-white/60 font-light">{sch.note}</td>
+                        <td className="p-4">
+                          <button
+                            onClick={() => handleToggleScheduleStatus(sch)}
+                            className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all ${
+                              sch.status === 'ABIERTO'
+                                ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                : sch.status === 'SOLO_PRESENCIAL'
+                                ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
+                                : 'bg-red-500/20 text-red-400 border-red-500/30'
+                            }`}
+                          >
+                            {sch.status}
+                          </button>
+                        </td>
+                        <td className="p-4 text-right space-x-2">
+                          <button
+                            onClick={() => setEditingSchedule(sch)}
+                            className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-[#FF9F1C]"
+                          >
+                            <Edit className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSchedule(sch.id)}
+                            className="p-2 rounded-lg bg-red-950/40 text-red-400 hover:bg-red-900/40"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* SECTION 2: HOLIDAY NOTICES CRUD */}
+            <div className="space-y-6 pt-6 border-t border-white/10">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                  <h3 className="text-xl font-black text-white uppercase tracking-tight flex items-center gap-2">
+                    <Calendar className="w-5 h-5 text-[#E61E2A]" />
+                    Mantenimiento de Avisos de Feriados y Anuncios Especiales
+                  </h3>
+                  <p className="text-xs text-white/50">
+                    Crea avisos destacados para feriados nacionales, carnavales o festividades con mensaje y rango de fechas.
+                  </p>
+                </div>
+                <button
+                  onClick={() =>
+                    setEditingHolidayNotice({
+                      title: 'Aviso de Feriado Especial',
+                      startDate: new Date().toISOString().slice(0, 10),
+                      endDate: new Date(Date.now() + 86400000 * 7).toISOString().slice(0, 10),
+                      badgeText: '🎉 ATENCIÓN ESPECIAL FERIADOS',
+                      message: 'Atención continua con asado directo al carbón durante todo el feriado.',
+                      status: 'active',
+                    })
+                  }
+                  className="px-4 py-2.5 rounded-xl bg-[#E61E2A] hover:bg-[#c71823] text-white text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-[0_0_15px_rgba(230,30,42,0.3)] transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Crear Aviso de Feriado</span>
+                </button>
+              </div>
+
+              {/* Holiday Notice Form Modal */}
+              {editingHolidayNotice && (
+                <div className="p-6 rounded-2xl bg-[#0a0a0a] border border-[#E61E2A]/40 space-y-4 animate-fadeIn shadow-2xl">
+                  <h4 className="text-sm font-black text-[#E61E2A] uppercase tracking-widest">
+                    {editingHolidayNotice.id ? 'Editar Aviso de Feriado' : 'Nuevo Aviso de Feriado'}
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <label className="font-black text-white/60 uppercase tracking-widest block mb-1">
+                        Título del Anuncio
+                      </label>
+                      <input
+                        type="text"
+                        value={editingHolidayNotice.title || ''}
+                        onChange={(e) => setEditingHolidayNotice({ ...editingHolidayNotice, title: e.target.value })}
+                        placeholder="Ej: Feriado de Año Nuevo y Carnaval"
+                        className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-black text-white/60 uppercase tracking-widest block mb-1">
+                        Insignia / Badge Superior
+                      </label>
+                      <input
+                        type="text"
+                        value={editingHolidayNotice.badgeText || ''}
+                        onChange={(e) => setEditingHolidayNotice({ ...editingHolidayNotice, badgeText: e.target.value })}
+                        placeholder="Ej: 🎉 ATENCIÓN ESPECIAL FERIADOS"
+                        className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-[#FF9F1C] font-bold"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-black text-white/60 uppercase tracking-widest block mb-1">Fecha Inicio</label>
+                      <input
+                        type="date"
+                        value={editingHolidayNotice.startDate || ''}
+                        onChange={(e) => setEditingHolidayNotice({ ...editingHolidayNotice, startDate: e.target.value })}
+                        className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-black text-white/60 uppercase tracking-widest block mb-1">Fecha Fin</label>
+                      <input
+                        type="date"
+                        value={editingHolidayNotice.endDate || ''}
+                        onChange={(e) => setEditingHolidayNotice({ ...editingHolidayNotice, endDate: e.target.value })}
+                        className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="font-black text-white/60 uppercase tracking-widest block mb-1">
+                        Mensaje Completo del Feriado
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={editingHolidayNotice.message || ''}
+                        onChange={(e) => setEditingHolidayNotice({ ...editingHolidayNotice, message: e.target.value })}
+                        placeholder="Escribe los detalles del servicio durante los días festivos..."
+                        className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white font-light"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex justify-end gap-3 pt-3">
+                    <button
+                      onClick={() => setEditingHolidayNotice(null)}
+                      className="px-4 py-2 rounded-lg bg-[#050505] text-white/60 hover:text-white text-xs font-black uppercase tracking-widest"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={() => handleSaveHolidayNotice(editingHolidayNotice)}
+                      className="px-6 py-2 rounded-lg bg-[#E61E2A] hover:bg-[#c71823] text-white text-xs font-black uppercase tracking-widest shadow-lg"
+                    >
+                      Guardar Aviso de Feriado
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Holiday Notices Table */}
+              <div className="rounded-2xl bg-[#0a0a0a] border border-white/10 overflow-hidden">
+                <table className="w-full text-left text-xs text-white/80">
+                  <thead className="bg-[#050505] text-white/40 uppercase font-black border-b border-white/10 tracking-widest">
+                    <tr>
+                      <th className="p-4">Título del Feriado</th>
+                      <th className="p-4">Insignia</th>
+                      <th className="p-4">Vigencia</th>
+                      <th className="p-4">Estado</th>
+                      <th className="p-4 text-right">Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {(dbData.holidayNotices || []).length > 0 ? (
+                      (dbData.holidayNotices || []).map((hn) => (
+                        <tr key={hn.id} className="hover:bg-white/5 transition-colors">
+                          <td className="p-4 font-black text-white uppercase tracking-tight">
+                            <div>
+                              <span>{hn.title}</span>
+                              <p className="text-[10px] text-white/40 font-normal line-clamp-1">{hn.message}</p>
+                            </div>
+                          </td>
+                          <td className="p-4 font-bold text-[#FF9F1C]">{hn.badgeText}</td>
+                          <td className="p-4 font-mono text-[11px] text-white/60">
+                            {hn.startDate} — {hn.endDate}
+                          </td>
+                          <td className="p-4">
+                            <button
+                              onClick={() => handleToggleHolidayNoticeStatus(hn)}
+                              className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider border transition-all ${
+                                hn.status === 'active'
+                                  ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                  : 'bg-red-500/20 text-red-400 border-red-500/30'
+                              }`}
+                            >
+                              {hn.status === 'active' ? '● ACTIVO' : '○ INACTIVO'}
+                            </button>
+                          </td>
+                          <td className="p-4 text-right space-x-2">
+                            <button
+                              onClick={() => setEditingHolidayNotice(hn)}
+                              className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-[#FF9F1C]"
+                            >
+                              <Edit className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteHolidayNotice(hn.id)}
+                              className="p-2 rounded-lg bg-red-950/40 text-red-400 hover:bg-red-900/40"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={5} className="p-6 text-center text-white/40 italic">
+                          No hay avisos de feriados registrados. Haz clic en "Crear Aviso de Feriado" para agregar uno.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* SECTION 3: GLOBAL BANNER NOTICE TEXT */}
+            <form onSubmit={handleSaveSettings} className="p-6 rounded-2xl bg-[#0a0a0a] border border-white/10 space-y-4">
+              <h4 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-[#E61E2A]" />
+                Texto del Banner Notificación Superior Global
+              </h4>
+              <p className="text-xs text-white/50">
+                Este mensaje aparece fijado en la parte superior del menú web para advertir sobre atención presencial o avisos urgentes.
+              </p>
+              <textarea
+                rows={2}
+                value={dbData.settings.noticeText || ''}
+                onChange={(e) => setDbData({ ...dbData, settings: { ...dbData.settings, noticeText: e.target.value } })}
+                className="w-full p-3 rounded-xl bg-[#050505] border border-white/10 text-white text-xs font-medium"
+              />
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-lg bg-[#E61E2A] hover:bg-[#c71823] text-white font-black text-xs uppercase tracking-widest shadow-lg flex items-center gap-2"
+              >
+                <Save className="w-4 h-4" />
+                <span>Guardar Banner Global</span>
+              </button>
+            </form>
           </div>
         )}
 
@@ -1636,51 +2208,180 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
               </div>
             </form>
 
-            {/* Security Audit Logs */}
-            <div className="bg-[#0a0a0a] border border-white/10 p-6 rounded-2xl space-y-4">
-              <h3 className="text-base font-black text-white uppercase tracking-tight">
-                Historial de Accesos y Seguridad
-              </h3>
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-white/80">
-                  <thead className="bg-[#050505] text-white/40 uppercase font-black border-b border-white/10 tracking-widest">
-                    <tr>
-                      <th className="p-3">Fecha / Hora</th>
-                      <th className="p-3">Evento</th>
-                      <th className="p-3">IP Origen</th>
-                      <th className="p-3">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/5">
-                    {dbData.securityLogs && dbData.securityLogs.length > 0 ? (
-                      dbData.securityLogs.slice(0, 15).map((log) => (
-                        <tr key={log.id} className="hover:bg-white/5 transition-colors">
-                          <td className="p-3 text-white/60 font-mono text-[11px]">{new Date(log.timestamp).toLocaleString()}</td>
-                          <td className="p-3 font-bold text-white">{log.event}</td>
-                          <td className="p-3 font-mono text-white/50">{log.ip}</td>
-                          <td className="p-3">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
-                                log.status === 'success'
-                                  ? 'bg-emerald-500/20 text-emerald-400'
-                                  : 'bg-red-500/20 text-red-400'
-                              }`}
-                            >
-                              {log.status}
-                            </span>
-                          </td>
-                        </tr>
-                      ))
-                    ) : (
-                      <tr>
-                        <td colSpan={4} className="p-4 text-center text-white/40 italic">
-                          No hay registros de seguridad disponibles.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
+            {/* Security & CMS Audit Logs */}
+            <div className="bg-[#0a0a0a] border border-white/10 p-6 rounded-2xl space-y-6">
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-white/10 pb-4">
+                <div>
+                  <h3 className="text-base font-black text-white uppercase tracking-tight flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-[#E61E2A]" />
+                    Auditoría de Seguridad, Accesos y Modificaciones CMS
+                  </h3>
+                  <p className="text-xs text-white/50">
+                    Registro detallado en tiempo real de todas las acciones administrativas, cambios en platos/horarios y accesos al panel.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleRefreshLogs}
+                  disabled={logsLoading}
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-white font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all shrink-0"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 text-[#FF9F1C] ${logsLoading ? 'animate-spin' : ''}`} />
+                  <span>{logsLoading ? 'Refrescando...' : 'Refrescar Auditoría'}</span>
+                </button>
               </div>
+
+              {/* Filters & Search */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-between items-center text-xs">
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setLogsFilter('all')}
+                    className={`px-3 py-1.5 rounded-lg font-black uppercase tracking-wider ${
+                      logsFilter === 'all' ? 'bg-[#E61E2A] text-white' : 'bg-white/5 text-white/60 hover:text-white'
+                    }`}
+                  >
+                    Todos los Registros
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLogsFilter('audit')}
+                    className={`px-3 py-1.5 rounded-lg font-black uppercase tracking-wider ${
+                      logsFilter === 'audit' ? 'bg-[#E61E2A] text-white' : 'bg-white/5 text-white/60 hover:text-white'
+                    }`}
+                  >
+                    Auditoría CMS ({(dbData.auditLogs || []).length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLogsFilter('security')}
+                    className={`px-3 py-1.5 rounded-lg font-black uppercase tracking-wider ${
+                      logsFilter === 'security' ? 'bg-[#E61E2A] text-white' : 'bg-white/5 text-white/60 hover:text-white'
+                    }`}
+                  >
+                    Accesos y 2FA ({(dbData.securityLogs || []).length})
+                  </button>
+                </div>
+
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 text-white/40 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={logsSearch}
+                    onChange={(e) => setLogsSearch(e.target.value)}
+                    placeholder="Buscar evento, usuario o IP..."
+                    className="w-full pl-9 pr-3 py-1.5 rounded-lg bg-[#050505] border border-white/10 text-white text-xs outline-none focus:border-[#FF9F1C]"
+                  />
+                </div>
+              </div>
+
+              {/* Table 1: Audit Logs (CMS Actions) */}
+              {(logsFilter === 'all' || logsFilter === 'audit') && (
+                <div className="space-y-3 pt-2">
+                  <h4 className="text-xs font-black text-[#FF9F1C] uppercase tracking-widest flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    Historial de Modificaciones en Base de Datos (Auditoría de Cambios)
+                  </h4>
+                  <div className="overflow-x-auto rounded-xl border border-white/10">
+                    <table className="w-full text-left text-xs text-white/80">
+                      <thead className="bg-[#050505] text-white/40 uppercase font-black border-b border-white/10 tracking-widest">
+                        <tr>
+                          <th className="p-3">Fecha / Hora</th>
+                          <th className="p-3">Usuario / Rol</th>
+                          <th className="p-3">Acción Realizada</th>
+                          <th className="p-3">Detalle Técnico de la Modificación</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {(dbData.auditLogs || [])
+                          .filter(
+                            (log) =>
+                              !logsSearch ||
+                              log.user.toLowerCase().includes(logsSearch.toLowerCase()) ||
+                              log.action.toLowerCase().includes(logsSearch.toLowerCase()) ||
+                              log.details.toLowerCase().includes(logsSearch.toLowerCase())
+                          )
+                          .slice(0, 20)
+                          .map((log) => (
+                            <tr key={log.id} className="hover:bg-white/5 transition-colors">
+                              <td className="p-3 text-white/60 font-mono text-[11px] shrink-0">
+                                {new Date(log.timestamp).toLocaleString()}
+                              </td>
+                              <td className="p-3 font-bold text-white whitespace-nowrap">{log.user}</td>
+                              <td className="p-3 font-bold text-[#FF9F1C] whitespace-nowrap">{log.action}</td>
+                              <td className="p-3 font-mono text-[11px] text-white/70">{log.details}</td>
+                            </tr>
+                          ))}
+                        {(!dbData.auditLogs || dbData.auditLogs.length === 0) && (
+                          <tr>
+                            <td colSpan={4} className="p-4 text-center text-white/40 italic">
+                              No hay registros de cambios en CMS.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* Table 2: Security Logs (Login, 2FA, Failures) */}
+              {(logsFilter === 'all' || logsFilter === 'security') && (
+                <div className="space-y-3 pt-4">
+                  <h4 className="text-xs font-black text-[#E61E2A] uppercase tracking-widest flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    Registro de Accesos, PIN 2FA e Intentos de Entrada
+                  </h4>
+                  <div className="overflow-x-auto rounded-xl border border-white/10">
+                    <table className="w-full text-left text-xs text-white/80">
+                      <thead className="bg-[#050505] text-white/40 uppercase font-black border-b border-white/10 tracking-widest">
+                        <tr>
+                          <th className="p-3">Fecha / Hora</th>
+                          <th className="p-3">Evento de Seguridad</th>
+                          <th className="p-3">IP Origen</th>
+                          <th className="p-3">Resultado</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-white/5">
+                        {(dbData.securityLogs || [])
+                          .filter(
+                            (log) =>
+                              !logsSearch ||
+                              log.event.toLowerCase().includes(logsSearch.toLowerCase()) ||
+                              log.ip.toLowerCase().includes(logsSearch.toLowerCase()) ||
+                              log.status.toLowerCase().includes(logsSearch.toLowerCase())
+                          )
+                          .slice(0, 20)
+                          .map((log) => (
+                            <tr key={log.id} className="hover:bg-white/5 transition-colors">
+                              <td className="p-3 text-white/60 font-mono text-[11px]">{new Date(log.timestamp).toLocaleString()}</td>
+                              <td className="p-3 font-bold text-white">{log.event}</td>
+                              <td className="p-3 font-mono text-white/50">{log.ip}</td>
+                              <td className="p-3">
+                                <span
+                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                    log.status === 'success'
+                                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                                      : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                                  }`}
+                                >
+                                  {log.status}
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        {(!dbData.securityLogs || dbData.securityLogs.length === 0) && (
+                          <tr>
+                            <td colSpan={4} className="p-4 text-center text-white/40 italic">
+                              No hay registros de accesos disponibles.
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}
