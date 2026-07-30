@@ -103,16 +103,16 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
         </div>
 
         {/* Categories Pills */}
-        <div className="flex items-center gap-2.5 overflow-x-auto pb-2 scrollbar-none">
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 scrollbar-none">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-5 py-3 rounded-xl text-xs font-black tracking-widest uppercase transition-all shrink-0 flex items-center gap-2 ${
+            className={`group px-5 py-3 rounded-xl text-xs sm:text-sm font-black tracking-widest uppercase transition-all shrink-0 flex items-center gap-2.5 ${
               selectedCategory === 'all'
                 ? 'bg-[#E61E2A] text-white shadow-[0_0_20px_rgba(230,30,42,0.4)] border border-[#E61E2A]'
-                : 'bg-[#0a0a0a] text-white/70 border border-white/10 hover:border-[#E61E2A]'
+                : 'bg-[#0a0a0a] text-white/70 border border-white/10 hover:border-[#E61E2A] hover:text-white'
             }`}
           >
-            <Utensils className="w-4 h-4" />
+            <Utensils className="w-5 h-5 text-amber-400 group-hover:scale-125 transition-transform duration-300" />
             <span>TODAS LAS CATEGORÍAS</span>
           </button>
 
@@ -120,13 +120,13 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
             <button
               key={cat.id}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-5 py-3 rounded-xl text-xs font-black tracking-widest uppercase transition-all shrink-0 flex items-center gap-2 ${
+              className={`group px-5 py-3 rounded-xl text-xs sm:text-sm font-black tracking-widest uppercase transition-all shrink-0 flex items-center gap-2.5 ${
                 selectedCategory === cat.id
                   ? 'bg-[#E61E2A] text-white shadow-[0_0_20px_rgba(230,30,42,0.4)] border border-[#E61E2A]'
-                  : 'bg-[#0a0a0a] text-white/70 border border-white/10 hover:border-[#E61E2A]'
+                  : 'bg-[#0a0a0a] text-white/70 border border-white/10 hover:border-[#E61E2A] hover:text-white'
               }`}
             >
-              <Flame className="w-3.5 h-3.5 text-[#FF9F1C]" />
+              <Flame className="w-5 h-5 text-[#FF9F1C] animate-pulse group-hover:scale-125 transition-transform duration-300" />
               <span>{cat.name}</span>
             </button>
           ))}

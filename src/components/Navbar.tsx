@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import { RestaurantSettings } from '../types';
 import { getDirectImageUrl } from '../utils';
+import { RedDragonIcon } from './icons/RedDragonIcon';
 
 interface NavbarProps {
   settings: RestaurantSettings;
@@ -37,12 +38,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const navLinks = [
-    { name: 'Inicio', href: '#inicio', icon: Home, color: 'text-red-400' },
-    { name: 'Menú al Carbón', href: '#menu', icon: UtensilsCrossed, color: 'text-amber-400' },
-    { name: 'Combos Especiales', href: '#combos', icon: Sparkles, color: 'text-orange-400' },
-    { name: 'Secreto del Carbón', href: '#secreto', icon: Flame, color: 'text-red-500' },
-    { name: 'Ubicación y Horarios', href: '#ubicacion', icon: MapPin, color: 'text-emerald-400' },
-    { name: 'Testimonios', href: '#testimonios', icon: Star, color: 'text-yellow-400' },
+    { name: 'Inicio', href: '#inicio', icon: Home, color: 'text-red-400', anim: 'group-hover:scale-125 group-hover:-translate-y-0.5' },
+    { name: 'Menú al Carbón', href: '#menu', icon: UtensilsCrossed, color: 'text-amber-400', anim: 'group-hover:rotate-12 group-hover:scale-125' },
+    { name: 'Combos Especiales', href: '#combos', icon: Sparkles, color: 'text-orange-400', anim: 'group-hover:scale-125 group-hover:rotate-45' },
+    { name: 'Secreto del Carbón', href: '#secreto', icon: Flame, color: 'text-red-500', anim: 'animate-pulse group-hover:scale-125' },
+    { name: 'Ubicación y Horarios', href: '#ubicacion', icon: MapPin, color: 'text-emerald-400', anim: 'group-hover:-translate-y-1 group-hover:scale-125' },
+    { name: 'Testimonios', href: '#testimonios', icon: Star, color: 'text-yellow-400', anim: 'group-hover:rotate-180 group-hover:scale-125' },
   ];
 
   const logoSrc = getDirectImageUrl(settings.logoUrl || 'https://imgur.com/a/IYGNbmi');
@@ -79,8 +80,8 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
         </a>
 
-        {/* Desktop Nav Links with Icons */}
-        <nav className="hidden lg:flex items-center gap-5 text-xs font-bold uppercase tracking-wider text-white/80">
+        {/* Desktop Nav Links with Larger Animated Icons */}
+        <nav className="hidden lg:flex items-center gap-6 text-xs sm:text-sm font-black uppercase tracking-wider text-white/80">
           {navLinks.map((link) => {
             const isActive = activeSection === link.href.replace('#', '');
             const IconComp = link.icon;
@@ -88,14 +89,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               <a
                 key={link.name}
                 href={link.href}
-                className={`flex items-center gap-1.5 transition-all py-1 px-2 rounded-lg hover:bg-white/5 ${
+                className={`group flex items-center gap-2 transition-all py-1.5 px-2.5 rounded-xl hover:bg-white/10 ${
                   isActive
-                    ? 'text-[#E61E2A] font-black border-b-2 border-[#E61E2A]'
+                    ? 'text-[#E61E2A] font-black border-b-2 border-[#E61E2A] bg-red-950/20'
                     : 'hover:text-white'
                 }`}
               >
-                <IconComp className={`w-3.5 h-3.5 ${link.color}`} />
-                <span>{link.name}</span>
+                <IconComp className={`w-5 h-5 ${link.color} transition-transform duration-300 ${link.anim}`} />
+                <span className="text-xs font-bold tracking-wide">{link.name}</span>
               </a>
             );
           })}
@@ -111,16 +112,16 @@ export const Navbar: React.FC<NavbarProps> = ({
             {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
           </button>
 
-          {/* Visitar Sitio / Google Maps Button */}
+          {/* UBICACIÓN Button with Custom Red Dragon Icon */}
           <a
             href={settings.googleMapsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E61E2A] to-[#C71823] text-white text-xs font-black uppercase tracking-widest hover:brightness-110 transition-all shadow-[0_0_20px_rgba(230,30,42,0.4)] flex items-center gap-2 border border-red-500/30"
+            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#E61E2A] via-[#C71823] to-[#900C16] text-white text-xs font-black uppercase tracking-widest hover:brightness-125 transition-all shadow-[0_0_20px_rgba(230,30,42,0.6)] flex items-center gap-2.5 border border-red-500/40 group relative overflow-hidden"
             title="Ver Ubicación en Google Maps"
           >
-            <Compass className="w-4 h-4 text-amber-300 animate-spin-slow" />
-            <span>Visitar el Sitio (Mapa)</span>
+            <RedDragonIcon className="w-6 h-6 text-red-500 group-hover:scale-125 transition-transform duration-300" />
+            <span className="font-black tracking-widest text-xs">UBICACIÓN</span>
           </a>
 
           {/* Discrete Admin Lock Trigger */}
@@ -163,10 +164,10 @@ export const Navbar: React.FC<NavbarProps> = ({
                 key={link.name}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-zinc-200 hover:bg-white/10 hover:text-[#E61E2A] transition-all"
+                className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-zinc-200 hover:bg-white/10 hover:text-[#E61E2A] transition-all group"
               >
-                <IconComp className={`w-4 h-4 ${link.color}`} />
-                <span>{link.name}</span>
+                <IconComp className={`w-5 h-5 ${link.color} transition-transform ${link.anim}`} />
+                <span className="font-bold text-sm">{link.name}</span>
               </a>
             );
           })}
@@ -175,10 +176,10 @@ export const Navbar: React.FC<NavbarProps> = ({
               href={settings.googleMapsUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-[#E61E2A] text-white font-black text-xs uppercase tracking-widest w-full shadow-[0_0_15px_rgba(230,30,42,0.4)]"
+              className="flex items-center justify-center gap-3 px-4 py-3.5 rounded-xl bg-gradient-to-r from-[#E61E2A] to-[#900C16] text-white font-black text-xs uppercase tracking-widest w-full shadow-[0_0_20px_rgba(230,30,42,0.5)] border border-red-500/40"
             >
-              <Navigation className="w-4 h-4 text-amber-300" />
-              <span>Visitar Sitio (Ver en Google Maps)</span>
+              <RedDragonIcon className="w-6 h-6 animate-bounce" />
+              <span className="font-black tracking-widest">UBICACIÓN</span>
             </a>
           </div>
         </div>

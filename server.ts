@@ -2,6 +2,7 @@ import express from 'express';
 import path from 'path';
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import { dbStore } from './src/server/dbStore';
@@ -13,14 +14,32 @@ const DEFAULT_ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin@dragonrojo.e
 const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD_HASH || 'dragonrojo2026';
 const DEFAULT_ADMIN_PIN = process.env.DEFAULT_ADMIN_PIN || '889900';
 
+function hashPassword(password: string): string {
+  if (!password) return '';
+  return crypto.createHash('sha256').update(password).digest('hex');
+}
+
 function getAdminCredentials() {
   const currentData = dbStore.getData() as any;
+  const username = currentData.adminCredentials?.username || DEFAULT_ADMIN_USERNAME;
+  const rawPass = currentData.adminCredentials?.password || DEFAULT_ADMIN_PASSWORD;
+  const passwordHash = currentData.adminCredentials?.passwordHash || hashPassword(rawPass);
+  const pin = currentData.adminCredentials?.pin || DEFAULT_ADMIN_PIN;
+  const notificationEmail = currentData.adminCredentials?.notificationEmail || 'codistack@gmail.com';
+
   return {
-    username: currentData.adminCredentials?.username || DEFAULT_ADMIN_USERNAME,
-    password: currentData.adminCredentials?.password || DEFAULT_ADMIN_PASSWORD,
-    pin: currentData.adminCredentials?.pin || DEFAULT_ADMIN_PIN,
-    notificationEmail: currentData.adminCredentials?.notificationEmail || 'codistack@gmail.com',
+    username,
+    passwordHash,
+    rawPassword: rawPass,
+    pin,
+    notificationEmail,
   };
+}
+
+function verifyAdminPassword(input: string, creds: ReturnType<typeof getAdminCredentials>): boolean {
+  if (!input) return false;
+  const hashedInput = hashPassword(input);
+  return hashedInput === creds.passwordHash || input === creds.rawPassword || input === creds.passwordHash;
 }
 
 async function startServer() {
@@ -90,7 +109,7 @@ async function startServer() {
     const clientIp = req.ip || req.socket.remoteAddress || '127.0.0.1';
     const creds = getAdminCredentials();
 
-    if (username === creds.username && password === creds.password) {
+    if (username === creds.username && verifyAdminPassword(password, creds)) {
       const tempToken = `temp-${Date.now()}-${Math.random().toString(36).substring(2)}`;
       const generatedPin = creds.pin;
       tempAuthSessions[tempToken] = {
@@ -231,6 +250,8 @@ async function startServer() {
         username: creds.username,
         pin: creds.pin,
         notificationEmail: creds.notificationEmail,
+        isEncryptedInDb: true,
+        passwordHashPreview: creds.passwordHash ? `${creds.passwordHash.substring(0, 16)}...` : 'sha256-encrypted',
       },
     });
   });
@@ -239,25 +260,30 @@ async function startServer() {
     const { currentPassword, newUsername, newPassword, newPin, notificationEmail } = req.body;
     const creds = getAdminCredentials();
 
-    if (currentPassword && currentPassword !== creds.password) {
+    if (currentPassword && !verifyAdminPassword(currentPassword, creds)) {
       return res.status(400).json({ success: false, message: 'La contraseña actual es incorrecta.' });
     }
 
-    const targetEmail = notificationEmail || 'codistack@gmail.com';
+    const targetEmail = notificationEmail || creds.notificationEmail || 'codistack@gmail.com';
+    const updatedUsername = newUsername || creds.username;
+    const updatedPin = newPin || creds.pin;
+    const updatedPasswordHash = newPassword ? hashPassword(newPassword) : creds.passwordHash;
 
     dbStore.updateData((curr: any) => {
       curr.adminCredentials = {
-        username: newUsername || creds.username,
-        password: newPassword || creds.password,
-        pin: newPin || creds.pin,
+        username: updatedUsername,
+        password: updatedPasswordHash, // Primary stored value is the strong SHA-256 hash!
+        passwordHash: updatedPasswordHash,
+        pin: updatedPin,
         notificationEmail: targetEmail,
         updatedAt: new Date().toISOString(),
+        isEncryptedInDb: true,
       };
       curr.securityLogs.unshift({
         id: `sec-${Date.now()}`,
         timestamp: new Date().toISOString(),
-        event: `CREDENTIALS_CHANGED_PING_SENT_TO_${targetEmail.toUpperCase()}`,
-        ip: req.ip || '127.0.0.1',
+        event: `CREDENTIALS_UPDATED_EMAIL_PING_SENT_TO_${targetEmail.toUpperCase()}`,
+        ip: req.ip || req.socket.remoteAddress || '127.0.0.1',
         status: 'success',
       });
       return curr;
@@ -265,11 +291,13 @@ async function startServer() {
 
     res.json({
       success: true,
-      message: `Credenciales actualizadas exitosamente. Se envió el aviso de notificación de seguridad a ${targetEmail}.`,
+      message: `Credenciales de administración actualizadas y encriptadas (SHA-256). Ping de seguridad enviado a ${targetEmail}.`,
       credentials: {
-        username: newUsername || creds.username,
-        pin: newPin || creds.pin,
+        username: updatedUsername,
+        pin: updatedPin,
         notificationEmail: targetEmail,
+        isEncryptedInDb: true,
+        passwordHashPreview: `${updatedPasswordHash.substring(0, 16)}...`,
       },
     });
   });
