@@ -9,9 +9,18 @@ import { FullAppDatabase } from './src/types';
 
 const PORT = 3000;
 const JWT_SECRET = process.env.JWT_SECRET || 'dragon_rojo_ecuador_secret_jwt_key_2026';
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin@dragonrojo.ec';
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD_HASH || 'dragonrojo2026';
-const DEFAULT_PIN = process.env.DEFAULT_ADMIN_PIN || '889900';
+const DEFAULT_ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin@dragonrojo.ec';
+const DEFAULT_ADMIN_PASSWORD = process.env.ADMIN_PASSWORD_HASH || 'dragonrojo2026';
+const DEFAULT_ADMIN_PIN = process.env.DEFAULT_ADMIN_PIN || '889900';
+
+function getAdminCredentials() {
+  const currentData = dbStore.getData() as any;
+  return {
+    username: currentData.adminCredentials?.username || DEFAULT_ADMIN_USERNAME,
+    password: currentData.adminCredentials?.password || DEFAULT_ADMIN_PASSWORD,
+    pin: currentData.adminCredentials?.pin || DEFAULT_ADMIN_PIN,
+  };
+}
 
 async function startServer() {
   const app = express();
@@ -76,10 +85,11 @@ async function startServer() {
   app.post('/api/auth/login', (req, res) => {
     const { username, password } = req.body;
     const clientIp = req.ip || req.socket.remoteAddress || '127.0.0.1';
+    const creds = getAdminCredentials();
 
-    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+    if (username === creds.username && password === creds.password) {
       const tempToken = `temp-${Date.now()}-${Math.random().toString(36).substring(2)}`;
-      const generatedPin = DEFAULT_PIN; // Can also be random in real prod
+      const generatedPin = creds.pin;
       tempAuthSessions[tempToken] = {
         pin: generatedPin,
         expiresAt: Date.now() + 10 * 60 * 1000, // 10 minutes
@@ -126,18 +136,19 @@ async function startServer() {
   app.post('/api/auth/verify-pin', (req, res) => {
     const { tempToken, pin } = req.body;
     const session = tempAuthSessions[tempToken];
+    const creds = getAdminCredentials();
 
     if (!session || Date.now() > session.expiresAt) {
       return res.status(400).json({ success: false, message: 'Sesión temporal expirada o inválida. Inicie sesión nuevamente.' });
     }
 
-    if (pin === session.pin || pin === DEFAULT_PIN) {
+    if (pin === session.pin || pin === creds.pin) {
       delete tempAuthSessions[tempToken];
 
       const token = jwt.sign(
         {
           id: 'admin-01',
-          email: ADMIN_USERNAME,
+          email: creds.username,
           role: 'SUPER_ADMIN',
           permissions: ['ALL'],
         },
@@ -160,7 +171,7 @@ async function startServer() {
         success: true,
         token,
         user: {
-          email: ADMIN_USERNAME,
+          email: creds.username,
           role: 'SUPER_ADMIN',
           name: 'Administrador Dragón Rojo',
         },
@@ -198,6 +209,52 @@ async function startServer() {
     res.json({
       success: true,
       data: dbStore.getData(),
+    });
+  });
+
+  app.get('/api/admin/credentials', requireAdmin, (req, res) => {
+    const creds = getAdminCredentials();
+    res.json({
+      success: true,
+      credentials: {
+        username: creds.username,
+        pin: creds.pin,
+      },
+    });
+  });
+
+  app.put('/api/admin/credentials', requireAdmin, (req, res) => {
+    const { currentPassword, newUsername, newPassword, newPin } = req.body;
+    const creds = getAdminCredentials();
+
+    if (currentPassword && currentPassword !== creds.password) {
+      return res.status(400).json({ success: false, message: 'La contraseña actual es incorrecta.' });
+    }
+
+    dbStore.updateData((curr: any) => {
+      curr.adminCredentials = {
+        username: newUsername || creds.username,
+        password: newPassword || creds.password,
+        pin: newPin || creds.pin,
+        updatedAt: new Date().toISOString(),
+      };
+      curr.securityLogs.unshift({
+        id: `sec-${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        event: 'CREDENTIALS_CHANGED',
+        ip: req.ip || '127.0.0.1',
+        status: 'success',
+      });
+      return curr;
+    });
+
+    res.json({
+      success: true,
+      message: 'Credenciales actualizadas exitosamente. Use sus nuevos datos para futuros inicios de sesión.',
+      credentials: {
+        username: newUsername || creds.username,
+        pin: newPin || creds.pin,
+      },
     });
   });
 

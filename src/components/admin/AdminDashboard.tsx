@@ -34,6 +34,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
   const [editingProduct, setEditingProduct] = useState<Partial<Product> | null>(null);
   const [newProdCategory, setNewProdCategory] = useState<string>('');
 
+  // Credentials Change State
+  const [credForm, setCredForm] = useState({
+    currentPassword: '',
+    newUsername: 'admin@dragonrojo.ec',
+    newPassword: '',
+    newPin: '889900',
+  });
+  const [credLoading, setCredLoading] = useState(false);
+  const [credMessage, setCredMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
   const fetchFullData = async () => {
     setLoading(true);
     try {
@@ -44,10 +54,51 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       if (data.success) {
         setDbData(data.data);
       }
+
+      // Fetch current admin credentials
+      const credRes = await fetch('/api/admin/credentials', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const credData = await credRes.json();
+      if (credData.success && credData.credentials) {
+        setCredForm((prev) => ({
+          ...prev,
+          newUsername: credData.credentials.username || prev.newUsername,
+          newPin: credData.credentials.pin || prev.newPin,
+        }));
+      }
     } catch (err) {
       console.error('Error loading admin data:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setCredLoading(true);
+    setCredMessage(null);
+    try {
+      const res = await fetch('/api/admin/credentials', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(credForm),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setCredMessage({ type: 'success', text: data.message });
+        setCredForm((prev) => ({ ...prev, currentPassword: '', newPassword: '' }));
+        triggerNotify('Credenciales de administración actualizadas correctamente');
+      } else {
+        setCredMessage({ type: 'error', text: data.message || 'Error al guardar credenciales' });
+      }
+    } catch (err) {
+      setCredMessage({ type: 'error', text: 'Error de conexión con el servidor' });
+    } finally {
+      setCredLoading(false);
     }
   };
 
@@ -619,6 +670,161 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
               <span>Guardar Cambios</span>
             </button>
           </form>
+        )}
+
+        {/* TAB 7: SECURITY & CREDENTIALS */}
+        {activeTab === 'security' && (
+          <div className="space-y-8 max-w-4xl">
+            {/* Credentials Change Card */}
+            <form onSubmit={handleSaveCredentials} className="bg-[#0a0a0a] border border-white/10 p-6 rounded-2xl space-y-6">
+              <div className="flex items-center gap-3 border-b border-white/10 pb-4">
+                <div className="p-2.5 rounded-xl bg-[#E61E2A]/20 text-[#E61E2A]">
+                  <Shield className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-black text-white uppercase tracking-tight">
+                    Gestión de Credenciales de Administrador
+                  </h3>
+                  <p className="text-xs text-white/60 font-light">
+                    Modifique su usuario de correo, contraseña principal y código PIN 2FA de 6 dígitos.
+                  </p>
+                </div>
+              </div>
+
+              {credMessage && (
+                <div
+                  className={`p-4 rounded-xl text-xs font-bold flex items-center gap-3 ${
+                    credMessage.type === 'success'
+                      ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-300'
+                      : 'bg-red-950/60 border border-red-500/40 text-red-300'
+                  }`}
+                >
+                  {credMessage.type === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  )}
+                  <span>{credMessage.text}</span>
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div>
+                  <label className="font-black text-white/60 uppercase tracking-widest block mb-1">
+                    Usuario / Correo de Administrador
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={credForm.newUsername}
+                    onChange={(e) => setCredForm({ ...credForm, newUsername: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white font-medium focus:border-[#E61E2A] outline-none"
+                    placeholder="admin@dragonrojo.ec"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-black text-white/60 uppercase tracking-widest block mb-1">
+                    Nuevo Código PIN 2FA (6 dígitos)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    pattern="[0-9]{6}"
+                    value={credForm.newPin}
+                    onChange={(e) => setCredForm({ ...credForm, newPin: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-[#FF9F1C] font-mono font-bold tracking-widest focus:border-[#FF9F1C] outline-none"
+                    placeholder="889900"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-black text-white/60 uppercase tracking-widest block mb-1">
+                    Contraseña Actual (Requerido para confirmar)
+                  </label>
+                  <input
+                    type="password"
+                    value={credForm.currentPassword}
+                    onChange={(e) => setCredForm({ ...credForm, currentPassword: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white focus:border-[#E61E2A] outline-none"
+                    placeholder="Contraseña actual"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-black text-white/60 uppercase tracking-widest block mb-1">
+                    Nueva Contraseña (Opcional)
+                  </label>
+                  <input
+                    type="password"
+                    value={credForm.newPassword}
+                    onChange={(e) => setCredForm({ ...credForm, newPassword: e.target.value })}
+                    className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white focus:border-[#E61E2A] outline-none"
+                    placeholder="Dejar en blanco para conservar actual"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={credLoading}
+                  className="px-6 py-3 rounded-lg bg-[#E61E2A] hover:bg-[#c71823] text-white font-black text-xs uppercase tracking-widest shadow-[0_0_15px_rgba(230,30,42,0.3)] flex items-center gap-2 transition-all disabled:opacity-50"
+                >
+                  <Save className="w-4 h-4" />
+                  <span>{credLoading ? 'Guardando...' : 'Actualizar Credenciales'}</span>
+                </button>
+              </div>
+            </form>
+
+            {/* Security Audit Logs */}
+            <div className="bg-[#0a0a0a] border border-white/10 p-6 rounded-2xl space-y-4">
+              <h3 className="text-base font-black text-white uppercase tracking-tight">
+                Historial de Accesos y Seguridad
+              </h3>
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-white/80">
+                  <thead className="bg-[#050505] text-white/40 uppercase font-black border-b border-white/10 tracking-widest">
+                    <tr>
+                      <th className="p-3">Fecha / Hora</th>
+                      <th className="p-3">Evento</th>
+                      <th className="p-3">IP Origen</th>
+                      <th className="p-3">Estado</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {dbData.securityLogs && dbData.securityLogs.length > 0 ? (
+                      dbData.securityLogs.slice(0, 15).map((log) => (
+                        <tr key={log.id} className="hover:bg-white/5 transition-colors">
+                          <td className="p-3 text-white/60 font-mono text-[11px]">{new Date(log.timestamp).toLocaleString()}</td>
+                          <td className="p-3 font-bold text-white">{log.event}</td>
+                          <td className="p-3 font-mono text-white/50">{log.ip}</td>
+                          <td className="p-3">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase ${
+                                log.status === 'success'
+                                  ? 'bg-emerald-500/20 text-emerald-400'
+                                  : 'bg-red-500/20 text-red-400'
+                              }`}
+                            >
+                              {log.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan={4} className="p-4 text-center text-white/40 italic">
+                          No hay registros de seguridad disponibles.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* TAB 8: BACKUPS & SEED */}

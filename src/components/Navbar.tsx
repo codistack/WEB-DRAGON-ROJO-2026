@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Flame, MapPin, Phone, MessageCircle, Menu, X, Sun, Moon } from 'lucide-react';
+import { Flame, MapPin, Phone, MessageCircle, Menu, X, Sun, Moon, Lock } from 'lucide-react';
 import { RestaurantSettings } from '../types';
 
 interface NavbarProps {
@@ -25,6 +25,12 @@ export const Navbar: React.FC<NavbarProps> = ({
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const handleOpenAdmin = (e: React.MouseEvent) => {
+    e.preventDefault();
+    window.history.pushState({}, '', '/dragonrojoec');
+    window.dispatchEvent(new Event('popstate'));
+  };
 
   const navLinks = [
     { name: 'Inicio', href: '#inicio' },
@@ -106,6 +112,18 @@ export const Navbar: React.FC<NavbarProps> = ({
             <MapPin className="w-3.5 h-3.5" />
             <span>Visítanos Hoy</span>
           </a>
+
+          {/* Hidden Discrete Admin Lock Trigger (Visible strictly on Mouse Hover in Top-Right) */}
+          <div className="relative group">
+            <button
+              onClick={handleOpenAdmin}
+              className="p-2 rounded-lg opacity-0 group-hover:opacity-100 hover:bg-red-950/60 text-white/40 hover:text-[#E61E2A] transition-all duration-300 flex items-center gap-1.5 cursor-pointer"
+              title="Acceso Administrador"
+            >
+              <Lock className="w-3.5 h-3.5 text-[#E61E2A]" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-white/80">CMS</span>
+            </button>
+          </div>
         </div>
 
         {/* Mobile Hamburger Button */}
