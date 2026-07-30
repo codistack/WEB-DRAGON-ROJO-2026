@@ -62,7 +62,7 @@ export const Hero: React.FC<HeroProps> = ({ settings, carouselItems }) => {
     if (items.length <= 1) return;
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % items.length);
-    }, 4500);
+    }, 8000);
     return () => clearInterval(interval);
   }, [items.length]);
 
@@ -162,39 +162,39 @@ export const Hero: React.FC<HeroProps> = ({ settings, carouselItems }) => {
           <div className="lg:col-span-5 relative z-10">
             <div className="relative mx-auto max-w-md lg:max-w-none">
               {/* Outer Card frame with Carousel Controls */}
-              <div className="relative rounded-2xl overflow-hidden bg-[#050505] border border-[#E61E2A]/30 shadow-2xl group transition-all duration-500 hover:border-[#E61E2A]">
+              <div className="relative rounded-2xl overflow-hidden bg-[#050505] border border-[#E61E2A]/40 shadow-[0_20px_50px_rgba(0,0,0,0.9)] group transition-all duration-700 hover:border-[#E61E2A] min-h-[440px] sm:min-h-[500px]">
                 <img
                   key={activeItem.id}
                   src={getDirectImageUrl(activeItem.imageUrl)}
                   alt={activeItem.title}
-                  className="w-full h-80 sm:h-96 object-cover contrast-125 transition-all duration-700 animate-fadeIn"
+                  className="w-full h-[440px] sm:h-[500px] object-cover contrast-125 transition-all duration-1000 ease-in-out scale-100 group-hover:scale-105"
                 />
 
-                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-black/30 pointer-events-none" />
 
                 {/* Overlaid Badge */}
                 <div className="absolute top-4 left-4 z-20">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-black uppercase tracking-widest bg-[#E61E2A] text-white shadow-lg shadow-red-600/40 rounded-md">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 text-[10px] font-black uppercase tracking-widest bg-[#E61E2A] text-white shadow-lg shadow-red-600/50 rounded-md border border-red-400/30">
                     {activeItem.badge || '🔥 RECOMENDACIÓN DEL CHEF'}
                   </span>
                 </div>
 
                 {/* Carousel Navigation Arrows */}
                 {items.length > 1 && (
-                  <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-black/60 backdrop-blur-md p-1 rounded-lg border border-white/10">
+                  <div className="absolute top-4 right-4 z-20 flex items-center gap-1.5 bg-black/75 backdrop-blur-md p-1 rounded-xl border border-white/10 shadow-lg">
                     <button
                       onClick={handlePrev}
-                      className="p-1.5 rounded-md hover:bg-white/20 text-white transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-white/20 text-white transition-colors"
                       title="Anterior"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </button>
-                    <span className="text-[10px] font-bold text-white/70 px-1 font-mono">
+                    <span className="text-[10px] font-mono font-bold text-amber-300 px-1">
                       {currentIndex + 1}/{items.length}
                     </span>
                     <button
                       onClick={handleNext}
-                      className="p-1.5 rounded-md hover:bg-white/20 text-white transition-colors"
+                      className="p-1.5 rounded-lg hover:bg-white/20 text-white transition-colors"
                       title="Siguiente"
                     >
                       <ChevronRight className="w-4 h-4" />
@@ -202,35 +202,38 @@ export const Hero: React.FC<HeroProps> = ({ settings, carouselItems }) => {
                   </div>
                 )}
 
-                {/* Bottom Card details */}
-                <div className="absolute bottom-4 left-4 right-4 bg-black/85 backdrop-blur-md p-5 border-l-4 border-[#E61E2A] shadow-2xl rounded-r-xl">
-                  <h3 className="text-[#FF9F1C] text-[11px] font-bold uppercase tracking-[0.2em] mb-1">
+                {/* Bottom Card details - Compact & Sleek */}
+                <div className="absolute bottom-3 left-3 right-3 bg-[#050505]/90 backdrop-blur-xl p-4 sm:p-5 border-l-4 border-[#E61E2A] shadow-2xl rounded-r-2xl border border-white/10">
+                  <h3 className="text-[#FF9F1C] text-[10px] font-black uppercase tracking-[0.2em] mb-1">
                     {activeItem.subtitle || 'Especialidad Tradicional'}
                   </h3>
-                  <h2 className="text-xl sm:text-2xl font-black uppercase tracking-tight text-white mb-1">
+                  <h2 className="text-lg sm:text-2xl font-black uppercase tracking-tight text-white mb-1">
                     {activeItem.title}
                   </h2>
-                  <p className="text-white/70 text-xs italic mb-3 font-serif line-clamp-2">
+                  <p className="text-white/80 text-xs italic mb-2 font-serif line-clamp-2 leading-relaxed">
                     {activeItem.description}
                   </p>
                   <div className="flex justify-between items-center pt-2 border-t border-white/10">
-                    <span className="text-2xl font-black text-[#E61E2A]">${activeItem.price.toFixed(2)}</span>
-                    <span className="text-[10px] uppercase font-bold text-emerald-400 tracking-widest flex items-center gap-1">
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-2xl font-black text-[#E61E2A]">${activeItem.price.toFixed(2)}</span>
+                      <span className="text-[10px] text-white/40 font-mono">USD</span>
+                    </div>
+                    <span className="text-[10px] uppercase font-black text-emerald-400 tracking-widest flex items-center gap-1.5 bg-emerald-950/60 px-2.5 py-1 rounded-full border border-emerald-500/30">
                       <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                      Preparado al Momento
+                      A la Brasa al Momento
                     </span>
                   </div>
                 </div>
 
                 {/* Dot Indicators */}
                 {items.length > 1 && (
-                  <div className="absolute bottom-1.5 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
+                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 z-20 flex gap-1.5">
                     {items.map((_, idx) => (
                       <button
                         key={idx}
                         onClick={() => setCurrentIndex(idx)}
-                        className={`h-1 rounded-full transition-all duration-300 ${
-                          idx === currentIndex ? 'w-5 bg-[#E61E2A]' : 'w-2 bg-white/40'
+                        className={`h-1 rounded-full transition-all duration-500 ${
+                          idx === currentIndex ? 'w-6 bg-[#E61E2A]' : 'w-2 bg-white/40 hover:bg-white/70'
                         }`}
                       />
                     ))}

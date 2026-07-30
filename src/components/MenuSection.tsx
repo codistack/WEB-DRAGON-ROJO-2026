@@ -18,6 +18,7 @@ export const MenuSection: React.FC<MenuSectionProps> = ({
   const [filterTag, setFilterTag] = useState<string>('all');
 
   const filteredProducts = products.filter((p) => {
+    if (p.status === 'inactive') return false;
     const matchesCat = selectedCategory === 'all' || p.categoryId === selectedCategory;
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
