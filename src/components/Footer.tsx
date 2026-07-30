@@ -1,13 +1,58 @@
-import React from 'react';
-import { Flame, MapPin, Phone, Mail, ShieldCheck, Heart } from 'lucide-react';
-import { RestaurantSettings, SocialLinks } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Flame, MapPin, Phone, Mail, ShieldCheck, Heart, Database, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import { RestaurantSettings, SocialLinks, FullAppDatabase } from '../types';
+import { testFirestoreConnection, syncAllDocumentsToFirestore, FirestoreStatus } from '../lib/firebase';
 
 interface FooterProps {
   settings: RestaurantSettings;
   socials: SocialLinks;
+  fullData?: FullAppDatabase;
 }
 
-export const Footer: React.FC<FooterProps> = ({ settings, socials }) => {
+export const Footer: React.FC<FooterProps> = ({ settings, socials, fullData }) => {
+  const [firestoreStatus, setFirestoreStatus] = useState<{
+    loading: boolean;
+    connected: boolean;
+    message: string;
+  }>({
+    loading: true,
+    connected: false,
+    message: 'Verificando conexión con Firestore...'
+  });
+
+  const [syncing, setSyncing] = useState(false);
+  const [syncNotice, setSyncNotice] = useState<string | null>(null);
+
+  const checkConnection = async () => {
+    setFirestoreStatus(prev => ({ ...prev, loading: true }));
+    const status: FirestoreStatus = await testFirestoreConnection();
+    setFirestoreStatus({
+      loading: false,
+      connected: status.connected,
+      message: status.message
+    });
+
+    // Auto-sync documents if connected and fullData is available
+    if (status.connected && fullData) {
+      handleAutoSync(fullData);
+    }
+  };
+
+  const handleAutoSync = async (dataToSync: FullAppDatabase) => {
+    setSyncing(true);
+    const res = await syncAllDocumentsToFirestore(dataToSync);
+    setSyncing(false);
+    if (res.success) {
+      setSyncNotice(`Sincronización activa: ${res.syncedCount} documentos guardados en Firestore.`);
+    } else {
+      setSyncNotice(`Error al sincronizar: ${res.message}`);
+    }
+  };
+
+  useEffect(() => {
+    checkConnection();
+  }, [fullData]);
+
   return (
     <footer className="relative z-10 bg-[#0a0a0a] border-t border-white/10 text-zinc-400 text-xs">
       {/* Top High Impact Banner from Design Spec */}
@@ -109,6 +154,52 @@ export const Footer: React.FC<FooterProps> = ({ settings, socials }) => {
               <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
               <span>Garantía de sabor ancestral y atención de primera en nuestro local presencial.</span>
             </div>
+          </div>
+        </div>
+
+        {/* FIRESTORE SERVER STATUS BAR MANDATE AT FOOTER */}
+        <div className="p-4 rounded-2xl bg-[#050505] border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-white/5 text-[#FF9F1C]">
+              <Database className="w-4 h-4" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-white/60 font-medium">Estado del Servidor:</span>
+              {firestoreStatus.loading ? (
+                <span className="text-amber-400 font-bold flex items-center gap-1.5 animate-pulse">
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  Verificando Firestore...
+                </span>
+              ) : firestoreStatus.connected ? (
+                <span className="text-emerald-400 font-bold flex items-center gap-2 bg-emerald-950/60 border border-emerald-500/30 px-3 py-1 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.2)]">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"></span>
+                  Conexión establecida con el servidor Firestore
+                </span>
+              ) : (
+                <span className="text-red-400 font-bold flex items-center gap-2 bg-red-950/60 border border-red-500/30 px-3 py-1 rounded-full">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
+                  No existe conexión con el servidor Firestore
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 text-[11px]">
+            {syncNotice && (
+              <span className="text-white/70 font-mono italic hidden lg:inline-block">
+                {syncNotice}
+              </span>
+            )}
+            {fullData && (
+              <button
+                onClick={() => handleAutoSync(fullData)}
+                disabled={syncing}
+                className="px-3 py-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white font-black uppercase text-[10px] tracking-wider flex items-center gap-1.5 transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3 h-3 ${syncing ? 'animate-spin text-[#FF9F1C]' : ''}`} />
+                <span>{syncing ? 'Sincronizando...' : 'Re-sincronizar Base de Datos'}</span>
+              </button>
+            )}
           </div>
         </div>
 

@@ -1,0 +1,59 @@
+{
+  "entities": {
+    "RestaurantSettings": {
+      "title": "Configuración del Restaurante",
+      "description": "Información general y parámetros de Dragón Rojo",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "slogan": { "type": "string" },
+        "description": { "type": "string" },
+        "phone": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "email": { "type": "string" },
+        "address": { "type": "string" },
+        "city": { "type": "string" },
+        "country": { "type": "string" }
+      }
+    },
+    "Product": {
+      "title": "Producto del Menú",
+      "description": "Plato típico, bebida o combo al carbón",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "categoryId": { "type": "string" },
+        "price": { "type": "number" },
+        "description": { "type": "string" },
+        "availability": { "type": "boolean" }
+      }
+    },
+    "Category": {
+      "title": "Categoría de Menú",
+      "description": "Sección del menú del restaurante",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "slug": { "type": "string" },
+        "order": { "type": "number" }
+      }
+    }
+  },
+  "firestore": {
+    "/settings/main": {
+      "schema": "RestaurantSettings",
+      "description": "Documento principal de configuración"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Documento de cada plato o combo"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Documento de categoría"
+    }
+  }
+}

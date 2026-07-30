@@ -147,7 +147,7 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <Footer settings={data.settings} socials={socialLinks} />
+      <Footer settings={data.settings} socials={socialLinks} fullData={data} />
 
       {/* Dish Detailed Modal */}
       <DishDetailModal
