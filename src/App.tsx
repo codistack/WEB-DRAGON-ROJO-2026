@@ -13,6 +13,7 @@ import { TestimonialsSection } from './components/TestimonialsSection';
 import { FaqSection } from './components/FaqSection';
 import { Footer } from './components/Footer';
 import { DishDetailModal } from './components/DishDetailModal';
+import { PWAInstaller } from './components/PWAInstaller';
 import { AdminLogin } from './components/admin/AdminLogin';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { FullAppDatabase, Product } from './types';
@@ -154,6 +155,9 @@ export default function App() {
         onClose={() => setSelectedProduct(null)}
         googleMapsUrl={data.settings.googleMapsUrl}
       />
+
+      {/* PWA Installation & Offline Manager */}
+      <PWAInstaller />
     </div>
   );
 }

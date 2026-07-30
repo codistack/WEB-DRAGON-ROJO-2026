@@ -1,0 +1,69 @@
+{
+  "short_name": "Dragón Rojo",
+  "name": "Dragón Rojo - Parrilla & Tradición",
+  "description": "Carta interactiva, historia ancestral y especialidades al carbón del Restaurante Dragón Rojo Cuenca.",
+  "lang": "es",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#050505",
+  "theme_color": "#050505",
+  "categories": ["food", "lifestyle", "shopping"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "/pwa-maskable-192x192.png",
+      "type": "image/png",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/pwa-maskable-512x512.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Menú al Carbón",
+      "short_name": "Menú",
+      "description": "Explora la carta completa de cuyes, pollos y caldos",
+      "url": "/#menu",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Ubicación y Horarios",
+      "short_name": "Ubicación",
+      "description": "Dirección en Cuenca y horarios de fin de semana",
+      "url": "/#ubicacion",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    },
+    {
+      "name": "Recomendador IA",
+      "short_name": "Recomendador",
+      "description": "Quiz interactivo para elegir tu plato ideal",
+      "url": "/#quiz",
+      "icons": [{ "src": "/icon.svg", "sizes": "any" }]
+    }
+  ]
+}

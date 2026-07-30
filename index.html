@@ -1,11 +1,26 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>My Google AI Studio App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
+    <title>Dragón Rojo | Parrilla &amp; Tradición Culinaria</title>
+
+    <!-- Web App Manifest & Favicons -->
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- PWA & Mobile Meta Tags -->
+    <meta name="theme-color" content="#050505" />
+    <meta name="background-color" content="#050505" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Dragón Rojo" />
+    <meta name="application-name" content="Dragón Rojo" />
+    <meta name="description" content="Restaurante de gastronomía típica ecuatoriana y cocina 100% al carbón en Cuenca." />
   </head>
-  <body>
+  <body class="bg-[#050505] text-white selection:bg-[#E61E2A] selection:text-white">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
