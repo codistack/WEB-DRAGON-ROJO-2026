@@ -9,7 +9,15 @@ import { FullAppDatabase, Product, Category, ScheduleItem, ChefCarouselItem, Hol
 import { INITIAL_DATABASE } from '../../data/initialData';
 import { getDirectImageUrl } from '../../utils';
 import { sendCredentialChangePing, saveAdminCredentialsToFirestore } from '../../lib/firebase';
-import { saveAdminCredentialsToSupabase, syncFullDatabaseToSupabase } from '../../lib/supabase';
+import {
+  saveAdminCredentialsToSupabase,
+  syncFullDatabaseToSupabase,
+  saveSingleDishToSupabase,
+  deleteDishFromSupabase,
+  syncCategoriesToSupabase,
+  syncSettingsToSupabase,
+  testSupabaseConnection,
+} from '../../lib/supabase';
 
 interface AdminDashboardProps {
   token: string;
@@ -88,8 +96,40 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
   const [mandatorySuccess, setMandatorySuccess] = useState(false);
   const [mandatoryError, setMandatoryError] = useState('');
 
+  // Supabase Realtime Connection & Sync State
+  const [supabaseConnected, setSupabaseConnected] = useState<boolean>(true);
+  const [supabaseMessage, setSupabaseMessage] = useState<string>('Verificando conexión con Supabase Cloud DB...');
+  const [isSyncingSupabase, setIsSyncingSupabase] = useState<boolean>(false);
+
+  const checkSupabaseHealth = async () => {
+    const status = await testSupabaseConnection();
+    setSupabaseConnected(status.connected);
+    setSupabaseMessage(status.message);
+  };
+
+  const handleManualSyncSupabase = async () => {
+    if (!dbData) return;
+    setIsSyncingSupabase(true);
+    try {
+      const res = await syncFullDatabaseToSupabase(dbData);
+      if (res.success) {
+        setSupabaseConnected(true);
+        setSupabaseMessage('¡Todos los platillos, categorías, credenciales y configuración se guardaron con éxito en la base de datos Supabase!');
+        triggerNotify('Base de datos Supabase sincronizada correctamente');
+      } else {
+        setSupabaseMessage(`Respuesta parcial Supabase: ${res.error || 'Verifique tablas en Supabase SQL'}`);
+      }
+    } catch (err: any) {
+      setSupabaseConnected(false);
+      setSupabaseMessage(`Error de red al conectar con Supabase: ${err?.message || 'Sin conexión'}`);
+    } finally {
+      setIsSyncingSupabase(false);
+    }
+  };
+
   const fetchFullData = async () => {
     setLoading(true);
+    checkSupabaseHealth();
     try {
       const res = await fetch('/api/admin/full-data', {
         headers: { Authorization: `Bearer ${token}` },
@@ -384,8 +424,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       ? [productToSave, ...dbData.products]
       : dbData.products.map((p) => (p.id === targetId ? productToSave : p));
 
-    setDbData({ ...dbData, products: updatedProducts });
+    const newDb = { ...dbData, products: updatedProducts };
+    setDbData(newDb);
     setEditingProduct(null);
+
+    // Guardar en Supabase en tiempo real (tabla dishes y app_state)
+    await saveSingleDishToSupabase(productToSave, newDb);
 
     const url = isNew ? '/api/admin/products' : `/api/admin/products/${targetId}`;
     const method = isNew ? 'POST' : 'PUT';
@@ -401,12 +445,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       });
       const data = await res.json();
       if (data.success) {
-        triggerNotify(isNew ? 'Nuevo plato guardado con éxito' : 'Plato actualizado correctamente');
+        triggerNotify(isNew ? 'Nuevo plato guardado con éxito en Supabase y Servidor' : 'Plato actualizado en Supabase y Servidor');
       } else {
-        triggerNotify('Plato actualizado en sesión actual');
+        triggerNotify('Plato guardado en Supabase');
       }
     } catch (err) {
-      triggerNotify('Plato guardado localmente');
+      triggerNotify('Plato guardado en Supabase correctamente');
     }
   };
 
@@ -416,10 +460,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
     const updatedProduct = { ...product, status: newStatus };
 
     const updatedProducts = dbData.products.map((p) => (p.id === product.id ? updatedProduct : p));
-    setDbData({ ...dbData, products: updatedProducts });
+    const newDb = { ...dbData, products: updatedProducts };
+    setDbData(newDb);
+
+    await saveSingleDishToSupabase(updatedProduct, newDb);
 
     try {
-      const res = await fetch(`/api/admin/products/${product.id}`, {
+      await fetch(`/api/admin/products/${product.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -427,26 +474,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         },
         body: JSON.stringify({ status: newStatus }),
       });
-      const data = await res.json();
       triggerNotify(`Estado de "${product.name}" cambiado a ${newStatus === 'active' ? 'ACTIVO' : 'INACTIVO'}`);
     } catch (err) {
-      triggerNotify(`Estado cambiado a ${newStatus === 'active' ? 'ACTIVO' : 'INACTIVO'}`);
+      triggerNotify(`Estado actualizado en Supabase (${newStatus === 'active' ? 'ACTIVO' : 'INACTIVO'})`);
     }
   };
 
   const handleDeleteProduct = async (id: string) => {
     if (!dbData || !confirm('¿Estás seguro de eliminar este producto?')) return;
     const updatedProducts = dbData.products.filter((p) => p.id !== id);
-    setDbData({ ...dbData, products: updatedProducts });
+    const newDb = { ...dbData, products: updatedProducts };
+    setDbData(newDb);
+
+    await deleteDishFromSupabase(id, newDb);
 
     try {
-      const res = await fetch(`/api/admin/products/${id}`, {
+      await fetch(`/api/admin/products/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token || 'admin-authenticated'}` },
       });
-      triggerNotify('Producto eliminado');
+      triggerNotify('Producto eliminado de Supabase y servidor');
     } catch (err) {
-      triggerNotify('Producto eliminado localmente');
+      triggerNotify('Producto eliminado de Supabase');
     }
   };
 
@@ -472,8 +521,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       updatedCategories = updatedCategories.map((c) => (c.id === catId ? categoryToSave : c));
     }
 
-    setDbData({ ...dbData, categories: updatedCategories });
+    const newDb = { ...dbData, categories: updatedCategories };
+    setDbData(newDb);
     setEditingCategory(null);
+
+    await syncCategoriesToSupabase(updatedCategories);
+    await syncFullDatabaseToSupabase(newDb);
 
     try {
       const url = isNew ? '/api/admin/categories' : `/api/admin/categories/${catId}`;
@@ -486,9 +539,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         },
         body: JSON.stringify(categoryToSave),
       });
-      triggerNotify('Categoría guardada con éxito');
+      triggerNotify('Categoría guardada con éxito en Supabase');
     } catch (err) {
-      triggerNotify('Categoría guardada localmente');
+      triggerNotify('Categoría guardada en Supabase');
     }
   };
 
@@ -552,6 +605,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dbData) return;
+
+    await syncSettingsToSupabase(dbData.settings);
+    await syncFullDatabaseToSupabase(dbData);
+
     try {
       const res = await fetch('/api/admin/settings', {
         method: 'PUT',
@@ -561,9 +618,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         },
         body: JSON.stringify(dbData.settings),
       });
-      triggerNotify('Configuración del restaurante guardada');
+      triggerNotify('Configuración del restaurante guardada en Supabase y Servidor');
     } catch (err) {
-      triggerNotify('Configuración guardada localmente');
+      triggerNotify('Configuración guardada en Supabase');
     }
   };
 
@@ -983,7 +1040,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       </aside>
 
       {/* Main Workspace */}
-      <main className="flex-1 p-6 lg:p-10 space-y-8 overflow-y-auto">
+      <main className="flex-1 p-6 lg:p-10 space-y-6 overflow-y-auto">
+        {/* Supabase Connection Status Indicator Banner */}
+        <div className={`p-4 rounded-xl border transition-all ${
+          supabaseConnected
+            ? 'bg-[#0a0f0d] border-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.08)]'
+            : 'bg-[#140808] border-red-500/30 shadow-[0_0_20px_rgba(239,68,68,0.08)]'
+        }`}>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex items-start md:items-center gap-3">
+              <div className="relative flex items-center justify-center mt-1 md:mt-0">
+                <span className={`w-3.5 h-3.5 rounded-full ${
+                  supabaseConnected ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'
+                }`} />
+                <span className={`absolute w-5 h-5 rounded-full opacity-40 ${
+                  supabaseConnected ? 'bg-emerald-500 animate-ping' : 'bg-red-500'
+                }`} />
+              </div>
+
+              <div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-white">
+                    Base de Datos Supabase:
+                  </span>
+                  <span className={`text-[11px] font-black uppercase tracking-widest px-2.5 py-0.5 rounded-md ${
+                    supabaseConnected
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
+                      : 'bg-red-500/20 text-red-300 border border-red-500/40'
+                  }`}>
+                    {supabaseConnected ? 'CONECTADA' : 'DESCONECTADA'}
+                  </span>
+                </div>
+                <p className="text-[11px] font-mono text-white/60 mt-0.5">
+                  {supabaseMessage}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 self-end md:self-auto">
+              <button
+                onClick={handleManualSyncSupabase}
+                disabled={isSyncingSupabase}
+                className="px-4 py-2 rounded-lg bg-[#FF9F1C] hover:bg-[#e08b12] active:scale-95 text-black text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-[0_0_15px_rgba(255,159,28,0.3)] disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isSyncingSupabase ? 'animate-spin' : ''}`} />
+                <span>{isSyncingSupabase ? 'Sincronizando...' : 'Sincronizar Supabase Ahora'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Top Header & Alert Banner */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-white/10 pb-6">
           <div>

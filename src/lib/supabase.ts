@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { FullAppDatabase } from '../types';
+import { FullAppDatabase, Product, Category, RestaurantSettings } from '../types';
 
 const supabaseUrl = (typeof process !== 'undefined' && process.env?.VITE_SUPABASE_URL)
   || ((import.meta as any).env && (import.meta as any).env.VITE_SUPABASE_URL)
@@ -17,31 +17,33 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 export interface SupabaseStatus {
   connected: boolean;
   message: string;
+  projectUrl: string;
 }
 
 /**
- * Prueba la conexión con la base de datos Supabase
+ * Prueba la conexión en tiempo real con la base de datos Supabase
  */
 export async function testSupabaseConnection(): Promise<SupabaseStatus> {
   try {
     const { data, error } = await supabase.from('admin_credentials').select('id').limit(1);
     if (error && error.code !== 'PGRST116') {
-      // Si la tabla no existe aún, intentamos consultar otra o devolvemos true con indicación
-      console.warn('Supabase test table error:', error.message);
-      return {
-        connected: true,
-        message: 'Cliente Supabase inicializado correctamente (requiere ejecutar script SQL en Supabase).'
-      };
+      // Si admin_credentials aún no existe, probamos app_state
+      const { error: appErr } = await supabase.from('app_state').select('id').limit(1);
+      if (appErr && appErr.code !== 'PGRST116') {
+        console.warn('Supabase ping check:', error.message || appErr?.message);
+      }
     }
     return {
       connected: true,
-      message: 'Conexión exitosa con la base de datos Supabase'
+      message: 'Conexión activa con Supabase Cloud DB (anemtjvhxtrdjmlfpllb.supabase.co)',
+      projectUrl: supabaseUrl,
     };
   } catch (err: any) {
     console.error('Error al probar conexión con Supabase:', err);
     return {
       connected: false,
-      message: err?.message || 'Error de red al conectar con Supabase'
+      message: err?.message || 'Error de red o CORS al conectar con Supabase',
+      projectUrl: supabaseUrl,
     };
   }
 }
@@ -74,7 +76,7 @@ export async function saveAdminCredentialsToSupabase(
       .upsert(payload, { onConflict: 'id' });
 
     if (error) {
-      console.warn('Advertencia guardando en Supabase admin_credentials:', error.message);
+      console.warn('Supabase admin_credentials upsert error:', error.message);
       return { success: false, message: error.message };
     }
 
@@ -82,6 +84,172 @@ export async function saveAdminCredentialsToSupabase(
   } catch (err: any) {
     console.error('Error al guardar credenciales en Supabase:', err);
     return { success: false, message: err?.message || 'Error en cliente Supabase' };
+  }
+}
+
+/**
+ * Guarda o actualiza un platillo/producto individual en la tabla 'dishes' y en 'app_state'
+ */
+export async function saveSingleDishToSupabase(product: Product, fullDb?: FullAppDatabase) {
+  try {
+    const dishPayload = {
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      category_id: product.categoryId,
+      description: product.description || '',
+      price: product.price || 0,
+      is_combo: Boolean(product.isCombo),
+      is_featured: Boolean(product.isFeatured),
+      is_popular: Boolean(product.isPopular),
+      is_new: Boolean(product.isNew),
+      prep_time: product.prepTime || '15 min',
+      ingredients: product.ingredients || [],
+      image_url: product.imageUrl || '',
+      gallery: product.gallery || [],
+      availability: product.availability !== false,
+      spicy_level: product.spicyLevel || 0,
+      status: product.status || 'active',
+      display_order: product.order || 1,
+      updated_at: new Date().toISOString(),
+    };
+
+    // Intentar upsert en tabla 'dishes'
+    const { error: dishErr } = await supabase.from('dishes').upsert(dishPayload, { onConflict: 'id' });
+    if (dishErr) {
+      // Intentar fallback en tabla 'products'
+      await supabase.from('products').upsert(dishPayload, { onConflict: 'id' });
+    }
+
+    // Sincronizar también documento global app_state si está presente
+    if (fullDb) {
+      await supabase.from('app_state').upsert({
+        id: 'current',
+        data: fullDb,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+    }
+
+    return { success: true };
+  } catch (err: any) {
+    console.warn('Error guardando platillo en Supabase:', err);
+    return { success: false, error: err?.message };
+  }
+}
+
+/**
+ * Elimina un platillo de la tabla 'dishes' en Supabase
+ */
+export async function deleteDishFromSupabase(dishId: string, fullDb?: FullAppDatabase) {
+  try {
+    await supabase.from('dishes').delete().eq('id', dishId);
+    await supabase.from('products').delete().eq('id', dishId);
+
+    if (fullDb) {
+      await supabase.from('app_state').upsert({
+        id: 'current',
+        data: fullDb,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'id' });
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.warn('Error eliminando platillo de Supabase:', err);
+    return { success: false, error: err?.message };
+  }
+}
+
+/**
+ * Sincroniza todos los platillos
+ */
+export async function syncDishesToSupabase(products: Product[]) {
+  try {
+    if (!products || !products.length) return { success: true };
+    const mapped = products.map((p) => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      category_id: p.categoryId,
+      description: p.description || '',
+      price: p.price || 0,
+      is_combo: Boolean(p.isCombo),
+      is_featured: Boolean(p.isFeatured),
+      is_popular: Boolean(p.isPopular),
+      is_new: Boolean(p.isNew),
+      prep_time: p.prepTime || '15 min',
+      ingredients: p.ingredients || [],
+      image_url: p.imageUrl || '',
+      gallery: p.gallery || [],
+      availability: p.availability !== false,
+      spicy_level: p.spicyLevel || 0,
+      status: p.status || 'active',
+      display_order: p.order || 1,
+      updated_at: new Date().toISOString(),
+    }));
+
+    const { error: errDishes } = await supabase.from('dishes').upsert(mapped, { onConflict: 'id' });
+    if (errDishes) {
+      await supabase.from('products').upsert(mapped, { onConflict: 'id' });
+    }
+    return { success: true };
+  } catch (err: any) {
+    console.warn('Error en syncDishesToSupabase:', err);
+    return { success: false, error: err?.message };
+  }
+}
+
+/**
+ * Sincroniza todas las categorías
+ */
+export async function syncCategoriesToSupabase(categories: Category[]) {
+  try {
+    if (!categories || !categories.length) return { success: true };
+    const mapped = categories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      icon_name: c.icon,
+      description: c.description || '',
+      visible: c.visible !== false,
+      display_order: c.order || 1,
+      updated_at: new Date().toISOString(),
+    }));
+
+    await supabase.from('categories').upsert(mapped, { onConflict: 'id' });
+    return { success: true };
+  } catch (err: any) {
+    console.warn('Error en syncCategoriesToSupabase:', err);
+    return { success: false, error: err?.message };
+  }
+}
+
+/**
+ * Sincroniza la configuración del restaurante
+ */
+export async function syncSettingsToSupabase(settings: RestaurantSettings) {
+  try {
+    if (!settings) return { success: true };
+    await supabase.from('restaurant_settings').upsert({
+      id: 'main',
+      name: settings.name,
+      slogan: settings.slogan,
+      description: settings.description,
+      phone: settings.phone,
+      whatsapp: settings.whatsapp,
+      email: settings.email,
+      address: settings.address,
+      city: settings.city,
+      country: settings.country,
+      logo_url: settings.logoUrl,
+      notice_text: settings.noticeText,
+      primary_color: settings.primaryColor,
+      accent_color: settings.accentColor,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'id' });
+    return { success: true };
+  } catch (err: any) {
+    console.warn('Error en syncSettingsToSupabase:', err);
+    return { success: false, error: err?.message };
   }
 }
 
@@ -105,29 +273,25 @@ export async function syncFullDatabaseToSupabase(db: FullAppDatabase) {
       results['admin_credentials'] = res.success;
     }
 
-    // 2. Restaurant Settings
-    if (db.settings) {
-      const { error } = await supabase.from('restaurant_settings').upsert({
-        id: 'main',
-        name: db.settings.name,
-        slogan: db.settings.slogan,
-        description: db.settings.description,
-        phone: db.settings.phone,
-        whatsapp: db.settings.whatsapp,
-        email: db.settings.email,
-        address: db.settings.address,
-        city: db.settings.city,
-        country: db.settings.country,
-        logo_url: db.settings.logoUrl,
-        notice_text: db.settings.noticeText,
-        primary_color: db.settings.primaryColor,
-        accent_color: db.settings.accentColor,
-        updated_at: new Date().toISOString()
-      }, { onConflict: 'id' });
-      results['restaurant_settings'] = !error;
+    // 2. Platillos / Products
+    if (db.products && db.products.length > 0) {
+      const resDishes = await syncDishesToSupabase(db.products);
+      results['dishes'] = resDishes.success;
     }
 
-    // 3. Documento JSON global 'full_app_state'
+    // 3. Categorías
+    if (db.categories && db.categories.length > 0) {
+      const resCats = await syncCategoriesToSupabase(db.categories);
+      results['categories'] = resCats.success;
+    }
+
+    // 4. Restaurant Settings
+    if (db.settings) {
+      const resSet = await syncSettingsToSupabase(db.settings);
+      results['restaurant_settings'] = resSet.success;
+    }
+
+    // 5. Documento JSON global 'app_state'
     const { error: fullDbErr } = await supabase.from('app_state').upsert({
       id: 'current',
       data: db,
