@@ -174,6 +174,7 @@ export interface FullAppDatabase {
   seoMetadata: SEOMetadata[];
   auditLogs: AuditLog[];
   securityLogs: SecurityLog[];
+  adminCredentials?: any;
   version: string;
   updatedAt: string;
 }

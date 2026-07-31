@@ -26,6 +26,7 @@ function getAdminCredentials() {
   const passwordHash = currentData.adminCredentials?.clave || currentData.adminCredentials?.passwordHash || hashPassword(rawPass);
   const pin = currentData.adminCredentials?.pin || DEFAULT_ADMIN_PIN;
   const notificationEmail = currentData.adminCredentials?.notificationEmail || 'codistack@gmail.com';
+  const contador = currentData.adminCredentials?.contador !== undefined ? Number(currentData.adminCredentials.contador) : 0;
 
   return {
     username,
@@ -33,6 +34,7 @@ function getAdminCredentials() {
     rawPassword: rawPass,
     pin,
     notificationEmail,
+    contador,
   };
 }
 
@@ -109,7 +111,10 @@ async function startServer() {
     const clientIp = req.ip || req.socket.remoteAddress || '127.0.0.1';
     const creds = getAdminCredentials();
 
-    if (username === creds.username && verifyAdminPassword(password, creds)) {
+    const cleanUsername = String(username || '').trim().toLowerCase();
+    const activeUsername = String(creds.username || '').trim().toLowerCase();
+
+    if (cleanUsername === activeUsername && verifyAdminPassword(password, creds)) {
       const tempToken = `temp-${Date.now()}-${Math.random().toString(36).substring(2)}`;
       const generatedPin = creds.pin;
       tempAuthSessions[tempToken] = {
@@ -250,6 +255,7 @@ async function startServer() {
         username: creds.username,
         pin: creds.pin,
         notificationEmail: creds.notificationEmail,
+        contador: creds.contador,
         isEncryptedInDb: true,
         passwordHashPreview: creds.passwordHash ? `${creds.passwordHash.substring(0, 16)}...` : 'sha256-encrypted',
       },
@@ -257,10 +263,10 @@ async function startServer() {
   });
 
   app.put('/api/admin/credentials', requireAdmin, (req, res) => {
-    const { currentPassword, newUsername, newPassword, newPin, notificationEmail } = req.body;
+    const { currentPassword, newUsername, newPassword, newPin, notificationEmail, setContador1 } = req.body;
     const creds = getAdminCredentials();
 
-    if (currentPassword && !verifyAdminPassword(currentPassword, creds)) {
+    if (creds.contador > 0 && currentPassword && !verifyAdminPassword(currentPassword, creds)) {
       return res.status(400).json({ success: false, message: 'La contraseña actual es incorrecta.' });
     }
 
@@ -268,6 +274,7 @@ async function startServer() {
     const updatedUsername = newUsername || creds.username;
     const updatedPin = newPin || creds.pin;
     const updatedPasswordHash = newPassword ? hashPassword(newPassword) : creds.passwordHash;
+    const newContador = (setContador1 || creds.contador === 0) ? 1 : (creds.contador || 1);
 
     dbStore.updateData((curr: any) => {
       curr.adminCredentials = {
@@ -277,13 +284,14 @@ async function startServer() {
         passwordHash: updatedPasswordHash,
         pin: updatedPin,
         notificationEmail: targetEmail,
+        contador: newContador,
         updatedAt: new Date().toISOString(),
         isEncryptedInDb: true,
       };
       curr.securityLogs.unshift({
         id: `sec-${Date.now()}`,
         timestamp: new Date().toISOString(),
-        event: `CREDENTIALS_UPDATED_EMAIL_PING_SENT_TO_${targetEmail.toUpperCase()}`,
+        event: `CREDENTIALS_UPDATED_CONTADOR_${newContador}_EMAIL_PING_SENT_TO_${targetEmail.toUpperCase()}`,
         ip: req.ip || req.socket.remoteAddress || '127.0.0.1',
         status: 'success',
       });
@@ -292,11 +300,12 @@ async function startServer() {
 
     res.json({
       success: true,
-      message: `Credenciales de administración actualizadas y encriptadas (SHA-256). Ping de seguridad enviado a ${targetEmail}.`,
+      message: `Credenciales de administración actualizadas y encriptadas (SHA-256). Contador=${newContador}.`,
       credentials: {
         username: updatedUsername,
         pin: updatedPin,
         notificationEmail: targetEmail,
+        contador: newContador,
         isEncryptedInDb: true,
         passwordHashPreview: `${updatedPasswordHash.substring(0, 16)}...`,
       },

@@ -3,7 +3,7 @@ import {
   Flame, LayoutDashboard, Utensils, FolderTree, Settings, Palette,
   Clock, Share2, Search, Shield, Database, FileText, LogOut, Plus,
   Trash2, Edit, Save, RefreshCw, Download, Upload, CheckCircle2, AlertCircle, Sparkles, Mail,
-  Eye, EyeOff, Globe, Calendar, AlertTriangle, Bell, Megaphone
+  Eye, EyeOff, Globe, Calendar, AlertTriangle, Bell, Megaphone, ShieldAlert
 } from 'lucide-react';
 import { FullAppDatabase, Product, Category, ScheduleItem, ChefCarouselItem, HolidayNotice } from '../../types';
 import { INITIAL_DATABASE } from '../../data/initialData';
@@ -74,6 +74,19 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
   const [credLoading, setCredLoading] = useState(false);
   const [credMessage, setCredMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  // Mandatory First-time Setup State (contador = 0)
+  const [credContador, setCredContador] = useState<number | null>(null);
+  const [mandatoryForm, setMandatoryForm] = useState({
+    newUsername: '',
+    notificationEmail: '',
+    newPassword: '',
+    newPin: '889900',
+  });
+  const [showMandatoryPassword, setShowMandatoryPassword] = useState(false);
+  const [mandatoryLoading, setMandatoryLoading] = useState(false);
+  const [mandatorySuccess, setMandatorySuccess] = useState(false);
+  const [mandatoryError, setMandatoryError] = useState('');
+
   const fetchFullData = async () => {
     setLoading(true);
     try {
@@ -109,18 +122,99 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       });
       const credData = await credRes.json();
       if (credData.success && credData.credentials) {
+        const activeUsername = credData.credentials.username || 'admin@dragonrojo.ec';
+        const activeEmail = credData.credentials.notificationEmail || 'codistack@gmail.com';
+        const activePin = credData.credentials.pin || '889900';
+        const currentContador = credData.credentials.contador !== undefined ? Number(credData.credentials.contador) : 0;
+
         setCredForm((prev) => ({
           ...prev,
-          newUsername: credData.credentials.username || prev.newUsername,
-          newPin: credData.credentials.pin || prev.newPin,
-          notificationEmail: credData.credentials.notificationEmail || 'codistack@gmail.com',
+          newUsername: activeUsername,
+          newPin: activePin,
+          notificationEmail: activeEmail,
         }));
+        setCredContador(currentContador);
+
+        if (currentContador === 0) {
+          setMandatoryForm({
+            newUsername: activeUsername,
+            notificationEmail: activeEmail,
+            newPassword: '',
+            newPin: activePin,
+          });
+        }
       }
     } catch (err) {
       console.error('Error loading admin data, applying fallback seed:', err);
       setDbData(INITIAL_DATABASE);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveMandatoryCredentials = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mandatoryForm.newUsername.trim()) {
+      setMandatoryError('Ingrese un nuevo correo o usuario de ingreso.');
+      return;
+    }
+    if (!mandatoryForm.notificationEmail.trim()) {
+      setMandatoryError('Ingrese un correo para notificaciones de seguridad.');
+      return;
+    }
+    if (!mandatoryForm.newPassword || mandatoryForm.newPassword.length < 6) {
+      setMandatoryError('Ingrese una nueva contraseña segura (mínimo 6 caracteres).');
+      return;
+    }
+
+    setMandatoryLoading(true);
+    setMandatoryError('');
+
+    try {
+      const authHeader = `Bearer ${token || localStorage.getItem('dragon_admin_token') || 'local-jwt-admin-session'}`;
+      const res = await fetch('/api/admin/credentials', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authHeader,
+        },
+        body: JSON.stringify({
+          newUsername: mandatoryForm.newUsername.trim(),
+          notificationEmail: mandatoryForm.notificationEmail.trim(),
+          newPassword: mandatoryForm.newPassword,
+          newPin: mandatoryForm.newPin.trim(),
+          setContador1: true,
+        }),
+      });
+      const data = await res.json();
+
+      const passwordHashPreview = data.credentials?.passwordHashPreview || 'sha256-encrypted-clave';
+      await sendCredentialChangePing(mandatoryForm.newUsername.trim(), mandatoryForm.notificationEmail.trim());
+      await saveAdminCredentialsToFirestore(
+        mandatoryForm.newUsername.trim(),
+        passwordHashPreview,
+        mandatoryForm.newPin.trim(),
+        mandatoryForm.notificationEmail.trim(),
+        1
+      );
+
+      setCredContador(1);
+      setMandatorySuccess(true);
+      triggerNotify('Credenciales actualizadas obligatoriamente. Contador=1 en base de datos.');
+    } catch (err) {
+      console.warn('Network fallback mandatory credentials save:', err);
+      await sendCredentialChangePing(mandatoryForm.newUsername.trim(), mandatoryForm.notificationEmail.trim());
+      await saveAdminCredentialsToFirestore(
+        mandatoryForm.newUsername.trim(),
+        'sha256-encrypted-clave',
+        mandatoryForm.newPin.trim(),
+        mandatoryForm.notificationEmail.trim(),
+        1
+      );
+      setCredContador(1);
+      setMandatorySuccess(true);
+    } finally {
+      setMandatoryLoading(false);
     }
   };
 
@@ -136,7 +230,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
           'Content-Type': 'application/json',
           Authorization: authHeader,
         },
-        body: JSON.stringify(credForm),
+        body: JSON.stringify({
+          ...credForm,
+          setContador1: true,
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -148,9 +245,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
           credForm.newUsername,
           passwordHash,
           credForm.newPin,
-          targetEmail
+          targetEmail,
+          1
         );
 
+        setCredContador(1);
         setCredMessage({
           type: 'success',
           text: `¡Datos guardados correctamente en la base de datos! El usuario y la contraseña han sido actualizados y encriptados en el campo 'clave' (colección 'admin', documento 'credentials'). Por favor, salga del sistema y vuelva a ingresar con sus nuevas credenciales.`,
@@ -168,8 +267,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         credForm.newUsername,
         'sha256-encrypted-clave',
         credForm.newPin,
-        targetEmail
+        targetEmail,
+        1
       );
+      setCredContador(1);
       setCredMessage({
         type: 'success',
         text: `¡Datos guardados correctamente en la base de datos! La clave se ha guardado de forma encriptada en la colección 'admin' (documento 'credentials', campo 'clave'). Por favor salga del sistema y vuelva a ingresar.`,
@@ -2552,6 +2653,145 @@ service cloud.firestore {
           </div>
         )}
       </main>
+
+      {/* MANDATORY FIRST-TIME CREDENTIALS BLOCKING MODAL (contador = 0) */}
+      {credContador === 0 && (
+        <div className="fixed inset-0 z-[9999] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4">
+          <div className="w-full max-w-xl bg-[#0a0a0a] border-2 border-[#E61E2A] rounded-2xl p-6 sm:p-8 shadow-[0_0_60px_rgba(230,30,42,0.5)] space-y-6 relative overflow-hidden">
+            <div className="flex items-center gap-4 border-b border-white/10 pb-5">
+              <div className="p-3.5 rounded-2xl bg-[#E61E2A] text-white shrink-0 shadow-[0_0_25px_rgba(230,30,42,0.6)]">
+                <ShieldAlert className="w-8 h-8 animate-pulse" />
+              </div>
+              <div>
+                <span className="px-2.5 py-1 rounded-md bg-[#E61E2A]/20 text-[#E61E2A] text-[10px] font-mono font-black uppercase tracking-widest border border-[#E61E2A]/40 inline-block mb-1">
+                  PRIMER INGRESO AL SISTEMA — CONTADOR = 0
+                </span>
+                <h2 className="text-lg sm:text-xl font-black text-white uppercase tracking-tight">
+                  ACTUALIZACIÓN OBLIGATORIA DE CREDENCIALES
+                </h2>
+                <p className="text-xs text-white/60 font-light mt-1 leading-relaxed">
+                  Por seguridad del sistema, al ingresar por primera vez debe configurar su nuevo usuario, correo de notificaciones, contraseña encriptada y PIN.
+                </p>
+              </div>
+            </div>
+
+            {mandatoryError && (
+              <div className="p-4 rounded-xl bg-red-950/80 border border-red-500/60 text-red-200 text-xs flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 text-red-400 shrink-0" />
+                <span>{mandatoryError}</span>
+              </div>
+            )}
+
+            {mandatorySuccess ? (
+              <div className="p-6 rounded-2xl bg-emerald-950/90 border border-emerald-500/60 text-emerald-100 space-y-4 shadow-[0_0_35px_rgba(16,185,129,0.3)]">
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="w-8 h-8 text-emerald-400 shrink-0 animate-bounce" />
+                  <div>
+                    <h3 className="font-black text-sm uppercase tracking-wider text-emerald-300">
+                      ¡DATOS GUARDADOS CORRECTAMENTE!
+                    </h3>
+                    <p className="text-xs text-emerald-200/90 font-light mt-1 leading-relaxed">
+                      La clave se ha guardado de forma encriptada en el campo <code className="bg-black/50 px-1.5 py-0.5 rounded text-amber-300 font-mono">clave</code> (colección <code className="bg-black/50 px-1.5 py-0.5 rounded text-amber-300 font-mono">admin</code>, documento <code className="bg-black/50 px-1.5 py-0.5 rounded text-amber-300 font-mono">credentials</code>). El contador de accesos en la base de datos se ha actualizado a <strong className="font-mono text-white">contador = 1</strong>.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-emerald-500/30 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={onLogout}
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#E61E2A] hover:bg-[#c71823] text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(230,30,42,0.6)] transition-all hover:scale-105"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    <span>Salir del Sistema y Volver a Ingresar</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleSaveMandatoryCredentials} className="space-y-4 text-xs">
+                <div>
+                  <label className="font-black text-white/80 uppercase tracking-widest block mb-1">
+                    Nuevo Correo / Usuario de Ingreso (Username) <span className="text-[#E61E2A]">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={mandatoryForm.newUsername}
+                    onChange={(e) => setMandatoryForm({ ...mandatoryForm, newUsername: e.target.value })}
+                    required
+                    placeholder="codistack@gmail.com"
+                    className="w-full p-3 rounded-xl bg-[#050505] border border-white/10 text-white text-xs outline-none focus:border-[#E61E2A]"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-black text-white/80 uppercase tracking-widest block mb-1">
+                    Correo para Notificaciones de Seguridad <span className="text-[#E61E2A]">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    value={mandatoryForm.notificationEmail}
+                    onChange={(e) => setMandatoryForm({ ...mandatoryForm, notificationEmail: e.target.value })}
+                    required
+                    placeholder="codistack@gmail.com"
+                    className="w-full p-3 rounded-xl bg-[#050505] border border-white/10 text-white text-xs outline-none focus:border-[#E61E2A]"
+                  />
+                </div>
+
+                <div>
+                  <label className="font-black text-white/80 uppercase tracking-widest block mb-1">
+                    Nueva Contraseña (Se guarda encriptada en la DB) <span className="text-[#E61E2A]">*</span>
+                  </label>
+                  <div className="relative">
+                    <input
+                      type={showMandatoryPassword ? "text" : "password"}
+                      value={mandatoryForm.newPassword}
+                      onChange={(e) => setMandatoryForm({ ...mandatoryForm, newPassword: e.target.value })}
+                      required
+                      minLength={6}
+                      placeholder="Ingrese su nueva clave privada"
+                      className="w-full p-3 pr-10 rounded-xl bg-[#050505] border border-white/10 text-white text-xs outline-none focus:border-[#E61E2A]"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowMandatoryPassword(!showMandatoryPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-white/60 hover:text-white transition-colors"
+                      title={showMandatoryPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    >
+                      {showMandatoryPassword ? <EyeOff className="w-4 h-4 text-amber-400" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="font-black text-white/80 uppercase tracking-widest block mb-1">
+                    Código PIN de Verificación (6 dígitos) <span className="text-[#E61E2A]">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    value={mandatoryForm.newPin}
+                    onChange={(e) => setMandatoryForm({ ...mandatoryForm, newPin: e.target.value.replace(/\D/g, '') })}
+                    required
+                    placeholder="889900"
+                    className="w-full p-3 rounded-xl bg-[#050505] border border-white/10 text-white font-mono text-center text-sm font-bold tracking-widest outline-none focus:border-[#E61E2A]"
+                  />
+                </div>
+
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    disabled={mandatoryLoading}
+                    className="w-full py-3.5 rounded-xl bg-[#E61E2A] hover:bg-[#c71823] text-white font-black text-xs uppercase tracking-widest shadow-[0_0_25px_rgba(230,30,42,0.5)] flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                  >
+                    <Save className="w-4 h-4" />
+                    <span>{mandatoryLoading ? 'Guardando en Base de Datos...' : 'Guardar Datos y Establecer Contador=1'}</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

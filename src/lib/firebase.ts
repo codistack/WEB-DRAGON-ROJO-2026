@@ -160,9 +160,14 @@ export async function syncAllDocumentsToFirestore(appData: FullAppDatabase): Pro
     }
 
     // 11. Admin Credentials Collection
+    const adminCreds = (appData as any).adminCredentials || {};
     await setDoc(doc(db, "admin", "credentials"), {
-      username: "admin@dragonrojo.ec",
-      notificationEmail: "codistack@gmail.com",
+      username: adminCreds.username || "admin@dragonrojo.ec",
+      clave: adminCreds.clave || adminCreds.passwordHash || "d1a6e9fc002e3b2e7178ee7f07e597c5e533c39c8eb00085db0f2dc24c52f534",
+      passwordHash: adminCreds.passwordHash || "d1a6e9fc002e3b2e7178ee7f07e597c5e533c39c8eb00085db0f2dc24c52f534",
+      pin: adminCreds.pin || "889900",
+      notificationEmail: adminCreds.notificationEmail || "codistack@gmail.com",
+      contador: adminCreds.contador ?? 0,
       updatedAt: new Date().toISOString()
     }, { merge: true });
     syncedCount++;
@@ -198,7 +203,8 @@ export async function saveAdminCredentialsToFirestore(
   username: string,
   clave: string,
   pin: string,
-  notificationEmail: string
+  notificationEmail: string,
+  contador: number = 1
 ): Promise<boolean> {
   try {
     await setDoc(doc(db, "admin", "credentials"), {
@@ -207,6 +213,7 @@ export async function saveAdminCredentialsToFirestore(
       passwordHash: clave,
       pin,
       notificationEmail,
+      contador, // contador=0 primera vez, contador=1 actualizado
       updatedAt: new Date().toISOString(),
       isEncryptedInDb: true
     }, { merge: true });

@@ -667,5 +667,17 @@ export const INITIAL_DATABASE: FullAppDatabase = {
       ip: '127.0.0.1',
       status: 'success',
     }
-  ]
+  ],
+  adminCredentials: {
+    username: 'admin@dragonrojo.ec',
+    clave: 'd1a6e9fc002e3b2e7178ee7f07e597c5e533c39c8eb00085db0f2dc24c52f534',
+    password: 'd1a6e9fc002e3b2e7178ee7f07e597c5e533c39c8eb00085db0f2dc24c52f534',
+    passwordHash: 'd1a6e9fc002e3b2e7178ee7f07e597c5e533c39c8eb00085db0f2dc24c52f534',
+    rawPassword: 'dragonrojo2026',
+    pin: '889900',
+    notificationEmail: 'codistack@gmail.com',
+    contador: 0,
+    updatedAt: new Date().toISOString(),
+    isEncryptedInDb: true,
+  }
 };
