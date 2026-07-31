@@ -9,6 +9,7 @@ import { FullAppDatabase, Product, Category, ScheduleItem, ChefCarouselItem, Hol
 import { INITIAL_DATABASE } from '../../data/initialData';
 import { getDirectImageUrl } from '../../utils';
 import { sendCredentialChangePing, saveAdminCredentialsToFirestore } from '../../lib/firebase';
+import { saveAdminCredentialsToSupabase, syncFullDatabaseToSupabase } from '../../lib/supabase';
 
 interface AdminDashboardProps {
   token: string;
@@ -225,6 +226,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         mandatoryForm.notificationEmail.trim(),
         1
       );
+      await saveAdminCredentialsToSupabase(
+        mandatoryForm.newUsername.trim(),
+        'sha256-encrypted-clave',
+        mandatoryForm.newPin.trim(),
+        mandatoryForm.notificationEmail.trim(),
+        1,
+        2
+      );
       setCredContador(1);
       setMandatorySuccess(true);
     } finally {
@@ -261,6 +270,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
           credForm.newPin,
           targetEmail,
           newCont
+        );
+        await saveAdminCredentialsToSupabase(
+          credForm.newUsername,
+          fullClave,
+          credForm.newPin,
+          targetEmail,
+          newCont,
+          2
         );
 
         setCredContador(newCont);
@@ -304,6 +321,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         'sha256-encrypted-clave',
         credForm.newPin,
         targetEmail,
+        2
+      );
+      await saveAdminCredentialsToSupabase(
+        credForm.newUsername,
+        'sha256-encrypted-clave',
+        credForm.newPin,
+        targetEmail,
+        2,
         2
       );
       setCredContador(2);

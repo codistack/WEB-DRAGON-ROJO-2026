@@ -175,6 +175,7 @@ export interface FullAppDatabase {
   auditLogs: AuditLog[];
   securityLogs: SecurityLog[];
   adminCredentials?: any;
+  bandera?: number;
   version: string;
   updatedAt: string;
 }
