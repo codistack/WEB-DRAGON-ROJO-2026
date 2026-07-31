@@ -188,11 +188,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       });
       const data = await res.json();
 
-      const passwordHashPreview = data.credentials?.passwordHashPreview || 'sha256-encrypted-clave';
+      const fullClave = data.credentials?.clave || data.credentials?.passwordHash || data.credentials?.password || 'sha256-encrypted-clave';
       await sendCredentialChangePing(mandatoryForm.newUsername.trim(), mandatoryForm.notificationEmail.trim());
       await saveAdminCredentialsToFirestore(
         mandatoryForm.newUsername.trim(),
-        passwordHashPreview,
+        fullClave,
         mandatoryForm.newPin.trim(),
         mandatoryForm.notificationEmail.trim(),
         1
@@ -200,6 +200,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
 
       setCredContador(1);
       setMandatorySuccess(true);
+      setDbData((prev) => ({
+        ...prev,
+        bandera: 2,
+        adminCredentials: {
+          ...prev.adminCredentials,
+          username: mandatoryForm.newUsername.trim(),
+          pin: mandatoryForm.newPin.trim(),
+          notificationEmail: mandatoryForm.notificationEmail.trim(),
+          contador: 1,
+          isEncryptedInDb: true,
+          clave: fullClave,
+          updatedAt: new Date().toISOString(),
+        },
+      }));
       triggerNotify('Credenciales actualizadas obligatoriamente. Contador=1 en base de datos.');
     } catch (err) {
       console.warn('Network fallback mandatory credentials save:', err);
@@ -237,13 +251,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       const data = await res.json();
       if (data.success) {
         const targetEmail = credForm.notificationEmail || 'codistack@gmail.com';
-        const passwordHash = data.credentials?.passwordHashPreview || 'sha256-encrypted-hash';
+        const fullClave = data.credentials?.clave || data.credentials?.passwordHash || data.credentials?.password || data.credentials?.passwordHashPreview || 'sha256-encrypted-hash';
         const newCont = data.credentials?.contador || 2;
         
         await sendCredentialChangePing(credForm.newUsername, targetEmail);
         await saveAdminCredentialsToFirestore(
           credForm.newUsername,
-          passwordHash,
+          fullClave,
           credForm.newPin,
           targetEmail,
           newCont
@@ -252,7 +266,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         setCredContador(newCont);
         setCredMessage({
           type: 'success',
-          text: `¡Datos guardados correctamente en la base de datos! Bandera=2, Contador=${newCont}. Las nuevas credenciales se han actualizado y guardado correctamente en la base de datos. Por favor, haga clic en el botón a continuación para salir del sistema y vuelva a ingresar con sus nuevas credenciales.`,
+          text: `¡Datos guardados correctamente en la base de datos! Bandera=2, Contador=${newCont}. Las nuevas credenciales se han actualizado y guardado correctamente en el documento 'credentials' (colección 'admin'). Por favor, haga clic en el botón a continuación para salir del sistema y vuelva a ingresar con sus nuevas credenciales.`,
         });
 
         // Actualizar el estado interno de credForm y dbData para reflejar los cambios inmediatamente
@@ -272,7 +286,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
             notificationEmail: targetEmail,
             contador: newCont,
             isEncryptedInDb: true,
-            clave: passwordHash,
+            clave: fullClave,
             updatedAt: new Date().toISOString(),
           },
         }));
@@ -2396,6 +2410,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
                   <Save className="w-4 h-4" />
                   <span>{credLoading ? 'Guardando...' : 'Actualizar Credenciales'}</span>
                 </button>
+              </div>
+
+              {/* Registro Actual Guardado en Base de Datos */}
+              <div className="mt-6 p-5 rounded-xl bg-[#050505] border border-amber-500/30 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-2">
+                  <div className="flex items-center gap-2 text-xs font-black uppercase text-white tracking-wide">
+                    <Database className="w-4 h-4 text-[#FF9F1C]" />
+                    <span>Registro Actual Guardado en Base de Datos (Colección: admin | Documento: credentials)</span>
+                  </div>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950/80 border border-amber-500/40 text-amber-300 font-bold self-start sm:self-auto">
+                    Bandera = {dbData.bandera ?? (credContador > 0 ? 2 : 1)} | Contador = {dbData.adminCredentials?.contador ?? credContador}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 text-xs font-mono">
+                  <div className="p-2.5 rounded-lg bg-black/60 border border-white/5">
+                    <div className="text-[10px] text-white/40 uppercase font-black">Usuario Registrado</div>
+                    <div className="text-emerald-400 font-bold truncate mt-0.5">
+                      {dbData.adminCredentials?.username || credForm.newUsername || 'admin@dragonrojo.ec'}
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-black/60 border border-white/5">
+                    <div className="text-[10px] text-white/40 uppercase font-black">Clave Encriptada (clave)</div>
+                    <div className="text-amber-300 font-bold truncate mt-0.5" title={dbData.adminCredentials?.clave || 'sha256-encrypted-clave'}>
+                      {dbData.adminCredentials?.clave ? `${dbData.adminCredentials.clave.substring(0, 16)}...` : 'sha256-encrypted...'}
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-black/60 border border-white/5">
+                    <div className="text-[10px] text-white/40 uppercase font-black">Código PIN 2FA</div>
+                    <div className="text-white font-bold tracking-widest mt-0.5">
+                      {dbData.adminCredentials?.pin || credForm.newPin || '889900'}
+                    </div>
+                  </div>
+                  <div className="p-2.5 rounded-lg bg-black/60 border border-white/5">
+                    <div className="text-[10px] text-white/40 uppercase font-black">Email de Notificaciones</div>
+                    <div className="text-[#FF9F1C] font-bold truncate mt-0.5">
+                      {dbData.adminCredentials?.notificationEmail || credForm.notificationEmail || 'codistack@gmail.com'}
+                    </div>
+                  </div>
+                </div>
               </div>
             </form>
 

@@ -319,6 +319,8 @@ async function startServer() {
       message: `Credenciales de administración actualizadas y encriptadas (SHA-256). Bandera=${newBandera}, Contador=${newContador}.`,
       credentials: {
         username: updatedUsername,
+        clave: updatedPasswordHash,
+        passwordHash: updatedPasswordHash,
         pin: updatedPin,
         notificationEmail: targetEmail,
         contador: newContador,
