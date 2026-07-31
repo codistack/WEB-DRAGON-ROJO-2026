@@ -252,9 +252,31 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         setCredContador(newCont);
         setCredMessage({
           type: 'success',
-          text: `¡Datos guardados correctamente en la base de datos! Bandera=2, Contador=${newCont}. La clave se actualizó de forma encriptada en el campo 'clave' (colección 'admin', documento 'credentials'). Por favor, salga del sistema y vuelva a ingresar con sus nuevas credenciales.`,
+          text: `¡Datos guardados correctamente en la base de datos! Bandera=2, Contador=${newCont}. Las nuevas credenciales se han actualizado y guardado correctamente en la base de datos. Por favor, haga clic en el botón a continuación para salir del sistema y vuelva a ingresar con sus nuevas credenciales.`,
         });
-        setCredForm((prev) => ({ ...prev, currentPassword: '', newPassword: '' }));
+
+        // Actualizar el estado interno de credForm y dbData para reflejar los cambios inmediatamente
+        setCredForm((prev) => ({
+          ...prev,
+          currentPassword: '',
+          newPassword: '',
+        }));
+
+        setDbData((prev) => ({
+          ...prev,
+          bandera: 2,
+          adminCredentials: {
+            ...prev.adminCredentials,
+            username: credForm.newUsername,
+            pin: credForm.newPin,
+            notificationEmail: targetEmail,
+            contador: newCont,
+            isEncryptedInDb: true,
+            clave: passwordHash,
+            updatedAt: new Date().toISOString(),
+          },
+        }));
+
         triggerNotify(`Credenciales actualizadas en base de datos (Bandera=2, Contador=${newCont})`);
       } else {
         setCredMessage({ type: 'error', text: data.message || 'Error al guardar credenciales' });

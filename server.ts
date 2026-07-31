@@ -269,8 +269,8 @@ async function startServer() {
     const { currentPassword, newUsername, newPassword, newPin, notificationEmail, setContador1 } = req.body;
     const creds = getAdminCredentials();
 
-    if (creds.contador > 0 && currentPassword && !verifyAdminPassword(currentPassword, creds)) {
-      return res.status(400).json({ success: false, message: 'La contraseña actual es incorrecta.' });
+    if (currentPassword && !verifyAdminPassword(currentPassword, creds)) {
+      return res.status(400).json({ success: false, message: 'La contraseña actual ingresada es incorrecta.' });
     }
 
     const targetEmail = notificationEmail || creds.notificationEmail || 'codistack@gmail.com';
