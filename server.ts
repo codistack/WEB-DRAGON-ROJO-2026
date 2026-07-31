@@ -23,7 +23,7 @@ function getAdminCredentials() {
   const currentData = dbStore.getData() as any;
   const username = currentData.adminCredentials?.username || DEFAULT_ADMIN_USERNAME;
   const rawPass = currentData.adminCredentials?.password || DEFAULT_ADMIN_PASSWORD;
-  const passwordHash = currentData.adminCredentials?.passwordHash || hashPassword(rawPass);
+  const passwordHash = currentData.adminCredentials?.clave || currentData.adminCredentials?.passwordHash || hashPassword(rawPass);
   const pin = currentData.adminCredentials?.pin || DEFAULT_ADMIN_PIN;
   const notificationEmail = currentData.adminCredentials?.notificationEmail || 'codistack@gmail.com';
 
@@ -272,6 +272,7 @@ async function startServer() {
     dbStore.updateData((curr: any) => {
       curr.adminCredentials = {
         username: updatedUsername,
+        clave: updatedPasswordHash, // Guardado en el campo clave de forma encriptada
         password: updatedPasswordHash, // Primary stored value is the strong SHA-256 hash!
         passwordHash: updatedPasswordHash,
         pin: updatedPin,

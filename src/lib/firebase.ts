@@ -192,6 +192,32 @@ export async function syncAllDocumentsToFirestore(appData: FullAppDatabase): Pro
 }
 
 /**
+ * Saves or updates admin credentials in Firestore collection "admin" -> document "credentials"
+ */
+export async function saveAdminCredentialsToFirestore(
+  username: string,
+  clave: string,
+  pin: string,
+  notificationEmail: string
+): Promise<boolean> {
+  try {
+    await setDoc(doc(db, "admin", "credentials"), {
+      username,
+      clave, // Campo clave de forma encriptada en la colección admin y documento credentials
+      passwordHash: clave,
+      pin,
+      notificationEmail,
+      updatedAt: new Date().toISOString(),
+      isEncryptedInDb: true
+    }, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn("Failed saving admin credentials to Firestore collection 'admin/credentials':", err);
+    return false;
+  }
+}
+
+/**
  * Sends security notification ping when admin credentials are updated
  */
 export async function sendCredentialChangePing(

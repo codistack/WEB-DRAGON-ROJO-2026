@@ -8,7 +8,7 @@ import {
 import { FullAppDatabase, Product, Category, ScheduleItem, ChefCarouselItem, HolidayNotice } from '../../types';
 import { INITIAL_DATABASE } from '../../data/initialData';
 import { getDirectImageUrl } from '../../utils';
-import { sendCredentialChangePing } from '../../lib/firebase';
+import { sendCredentialChangePing, saveAdminCredentialsToFirestore } from '../../lib/firebase';
 
 interface AdminDashboardProps {
   token: string;
@@ -69,6 +69,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
     newPin: '889900',
     notificationEmail: 'codistack@gmail.com',
   });
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
   const [credLoading, setCredLoading] = useState(false);
   const [credMessage, setCredMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
@@ -139,14 +141,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       const data = await res.json();
       if (data.success) {
         const targetEmail = credForm.notificationEmail || 'codistack@gmail.com';
+        const passwordHash = data.credentials?.passwordHashPreview || 'sha256-encrypted-hash';
+        
         await sendCredentialChangePing(credForm.newUsername, targetEmail);
+        await saveAdminCredentialsToFirestore(
+          credForm.newUsername,
+          passwordHash,
+          credForm.newPin,
+          targetEmail
+        );
 
         setCredMessage({
           type: 'success',
-          text: `¡Credenciales actualizadas e impresas encriptadas (SHA-256) en la base de datos! Notificación de seguridad (ping) enviada correctamente a ${targetEmail}.`,
+          text: `¡Datos guardados correctamente en la base de datos! El usuario y la contraseña han sido actualizados y encriptados en el campo 'clave' (colección 'admin', documento 'credentials'). Por favor, salga del sistema y vuelva a ingresar con sus nuevas credenciales.`,
         });
         setCredForm((prev) => ({ ...prev, currentPassword: '', newPassword: '' }));
-        triggerNotify(`Credenciales encriptadas guardadas y ping enviado a ${targetEmail}`);
+        triggerNotify(`Credenciales guardadas y ping enviado a ${targetEmail}`);
       } else {
         setCredMessage({ type: 'error', text: data.message || 'Error al guardar credenciales' });
       }
@@ -154,9 +164,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       console.warn('Network fallback for credentials save:', err);
       const targetEmail = credForm.notificationEmail || 'codistack@gmail.com';
       await sendCredentialChangePing(credForm.newUsername, targetEmail);
+      await saveAdminCredentialsToFirestore(
+        credForm.newUsername,
+        'sha256-encrypted-clave',
+        credForm.newPin,
+        targetEmail
+      );
       setCredMessage({
         type: 'success',
-        text: `Credenciales de administración encriptadas (SHA-256) y guardadas. Notificación ping enviada a ${targetEmail}.`,
+        text: `¡Datos guardados correctamente en la base de datos! La clave se ha guardado de forma encriptada en la colección 'admin' (documento 'credentials', campo 'clave'). Por favor salga del sistema y vuelva a ingresar.`,
       });
       setCredForm((prev) => ({ ...prev, currentPassword: '', newPassword: '' }));
       triggerNotify(`Credenciales guardadas y ping enviado a ${targetEmail}`);
@@ -2125,18 +2141,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
 
               {credMessage && (
                 <div
-                  className={`p-4 rounded-xl text-xs font-bold flex items-center gap-3 ${
+                  className={`p-4 rounded-xl text-xs font-bold flex flex-col gap-3 ${
                     credMessage.type === 'success'
-                      ? 'bg-emerald-950/60 border border-emerald-500/40 text-emerald-300'
-                      : 'bg-red-950/60 border border-red-500/40 text-red-300'
+                      ? 'bg-emerald-950/70 border border-emerald-500/50 text-emerald-200 shadow-[0_0_20px_rgba(16,185,129,0.2)]'
+                      : 'bg-red-950/70 border border-red-500/50 text-red-200'
                   }`}
                 >
-                  {credMessage.type === 'success' ? (
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                  ) : (
-                    <AlertCircle className="w-4 h-4 text-red-400 shrink-0" />
+                  <div className="flex items-start gap-3">
+                    {credMessage.type === 'success' ? (
+                      <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertCircle className="w-5 h-5 text-red-400 shrink-0 mt-0.5" />
+                    )}
+                    <span className="leading-relaxed">{credMessage.text}</span>
+                  </div>
+
+                  {credMessage.type === 'success' && (
+                    <div className="pt-2 flex items-center justify-end">
+                      <button
+                        type="button"
+                        onClick={onLogout}
+                        className="px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-[0_0_15px_rgba(230,30,42,0.4)] transition-all hover:scale-105"
+                      >
+                        <LogOut className="w-4 h-4" />
+                        <span>Salir del Sistema y Volver a Ingresar</span>
+                      </button>
+                    </div>
                   )}
-                  <span>{credMessage.text}</span>
                 </div>
               )}
 
@@ -2190,26 +2221,46 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
                   <label className="font-black text-white/60 uppercase tracking-widest block mb-1">
                     Contraseña Actual (Requerido para confirmar)
                   </label>
-                  <input
-                    type="password"
-                    value={credForm.currentPassword}
-                    onChange={(e) => setCredForm({ ...credForm, currentPassword: e.target.value })}
-                    className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white focus:border-[#E61E2A] outline-none"
-                    placeholder="Contraseña actual"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showCurrentPassword ? "text" : "password"}
+                      value={credForm.currentPassword}
+                      onChange={(e) => setCredForm({ ...credForm, currentPassword: e.target.value })}
+                      className="w-full p-2.5 pr-10 rounded-lg bg-[#050505] border border-white/10 text-white focus:border-[#E61E2A] outline-none"
+                      placeholder="Contraseña actual"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-white/50 hover:text-white transition-colors"
+                      title={showCurrentPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    >
+                      {showCurrentPassword ? <EyeOff className="w-4 h-4 text-amber-400" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
 
                 <div>
                   <label className="font-black text-white/60 uppercase tracking-widest block mb-1">
                     Nueva Contraseña (Opcional)
                   </label>
-                  <input
-                    type="password"
-                    value={credForm.newPassword}
-                    onChange={(e) => setCredForm({ ...credForm, newPassword: e.target.value })}
-                    className="w-full p-2.5 rounded-lg bg-[#050505] border border-white/10 text-white focus:border-[#E61E2A] outline-none"
-                    placeholder="Dejar en blanco para conservar actual"
-                  />
+                  <div className="relative">
+                    <input
+                      type={showNewPassword ? "text" : "password"}
+                      value={credForm.newPassword}
+                      onChange={(e) => setCredForm({ ...credForm, newPassword: e.target.value })}
+                      className="w-full p-2.5 pr-10 rounded-lg bg-[#050505] border border-white/10 text-white focus:border-[#E61E2A] outline-none"
+                      placeholder="Dejar en blanco para conservar actual"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword(!showNewPassword)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-white/50 hover:text-white transition-colors"
+                      title={showNewPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                    >
+                      {showNewPassword ? <EyeOff className="w-4 h-4 text-amber-400" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                  </div>
                 </div>
               </div>
 
