@@ -232,13 +232,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         },
         body: JSON.stringify({
           ...credForm,
-          setContador1: true,
         }),
       });
       const data = await res.json();
       if (data.success) {
         const targetEmail = credForm.notificationEmail || 'codistack@gmail.com';
         const passwordHash = data.credentials?.passwordHashPreview || 'sha256-encrypted-hash';
+        const newCont = data.credentials?.contador || 2;
         
         await sendCredentialChangePing(credForm.newUsername, targetEmail);
         await saveAdminCredentialsToFirestore(
@@ -246,16 +246,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
           passwordHash,
           credForm.newPin,
           targetEmail,
-          1
+          newCont
         );
 
-        setCredContador(1);
+        setCredContador(newCont);
         setCredMessage({
           type: 'success',
-          text: `¡Datos guardados correctamente en la base de datos! El usuario y la contraseña han sido actualizados y encriptados en el campo 'clave' (colección 'admin', documento 'credentials'). Por favor, salga del sistema y vuelva a ingresar con sus nuevas credenciales.`,
+          text: `¡Datos guardados correctamente en la base de datos! Bandera=2, Contador=${newCont}. La clave se actualizó de forma encriptada en el campo 'clave' (colección 'admin', documento 'credentials'). Por favor, salga del sistema y vuelva a ingresar con sus nuevas credenciales.`,
         });
         setCredForm((prev) => ({ ...prev, currentPassword: '', newPassword: '' }));
-        triggerNotify(`Credenciales guardadas y ping enviado a ${targetEmail}`);
+        triggerNotify(`Credenciales actualizadas en base de datos (Bandera=2, Contador=${newCont})`);
       } else {
         setCredMessage({ type: 'error', text: data.message || 'Error al guardar credenciales' });
       }
@@ -268,12 +268,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         'sha256-encrypted-clave',
         credForm.newPin,
         targetEmail,
-        1
+        2
       );
-      setCredContador(1);
+      setCredContador(2);
       setCredMessage({
         type: 'success',
-        text: `¡Datos guardados correctamente en la base de datos! La clave se ha guardado de forma encriptada en la colección 'admin' (documento 'credentials', campo 'clave'). Por favor salga del sistema y vuelva a ingresar.`,
+        text: `¡Datos guardados correctamente en la base de datos! Bandera=2, Contador=2. La clave se ha guardado de forma encriptada en la colección 'admin' (documento 'credentials', campo 'clave'). Por favor salga del sistema y vuelva a ingresar.`,
       });
       setCredForm((prev) => ({ ...prev, currentPassword: '', newPassword: '' }));
       triggerNotify(`Credenciales guardadas y ping enviado a ${targetEmail}`);

@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { Flame, MapPin, Phone, Mail, ShieldCheck, Heart, Database, RefreshCw, CheckCircle2, AlertCircle } from 'lucide-react';
+import React from 'react';
+import { Flame, MapPin, Phone, Mail, ShieldCheck, Heart } from 'lucide-react';
 import { RestaurantSettings, SocialLinks, FullAppDatabase } from '../types';
-import { testFirestoreConnection, syncAllDocumentsToFirestore, FirestoreStatus } from '../lib/firebase';
 
 interface FooterProps {
   settings: RestaurantSettings;
@@ -9,72 +8,7 @@ interface FooterProps {
   fullData?: FullAppDatabase;
 }
 
-export const Footer: React.FC<FooterProps> = ({ settings, socials, fullData }) => {
-  const [firestoreStatus, setFirestoreStatus] = useState<{
-    loading: boolean;
-    connected: boolean;
-    message: string;
-  }>({
-    loading: true,
-    connected: false,
-    message: 'Verificando conexión con Firestore...'
-  });
-
-  const [syncing, setSyncing] = useState(false);
-  const [syncNotice, setSyncNotice] = useState<string | null>(null);
-
-  const checkAndAutoSync = async () => {
-    setFirestoreStatus(prev => ({ ...prev, loading: true }));
-    const status: FirestoreStatus = await testFirestoreConnection();
-
-    if (status.connected) {
-      if (fullData) {
-        setSyncing(true);
-        const res = await syncAllDocumentsToFirestore(fullData);
-        setSyncing(false);
-        if (res.success) {
-          setFirestoreStatus({
-            loading: false,
-            connected: true,
-            message: "Conexión establecida con el servidor Firestore"
-          });
-          setSyncNotice(`Sincronizado automáticamente (${res.syncedCount} docs)`);
-        } else {
-          setFirestoreStatus({
-            loading: false,
-            connected: false,
-            message: "No existe conexión con el servidor Firestore"
-          });
-          setSyncNotice(`Fallo de sincronización: ${res.message}`);
-        }
-      } else {
-        setFirestoreStatus({
-          loading: false,
-          connected: true,
-          message: "Conexión establecida con el servidor Firestore"
-        });
-      }
-    } else {
-      setFirestoreStatus({
-        loading: false,
-        connected: false,
-        message: "No existe conexión con el servidor Firestore"
-      });
-      setSyncNotice("Sin conexión con Firestore. Reintentando automáticamente...");
-    }
-  };
-
-  useEffect(() => {
-    checkAndAutoSync();
-
-    // Automatic polling interval to restore connection if lost
-    const retryTimer = setInterval(() => {
-      checkAndAutoSync();
-    }, 10000);
-
-    return () => clearInterval(retryTimer);
-  }, [fullData]);
-
+export const Footer: React.FC<FooterProps> = ({ settings, socials }) => {
   return (
     <footer className="relative z-10 bg-[#0a0a0a] border-t border-white/10 text-zinc-400 text-xs">
       {/* Top High Impact Banner from Design Spec */}
@@ -176,42 +110,6 @@ export const Footer: React.FC<FooterProps> = ({ settings, socials, fullData }) =
               <ShieldCheck className="w-5 h-5 text-emerald-400 shrink-0" />
               <span>Garantía de sabor ancestral y atención de primera en nuestro local presencial.</span>
             </div>
-          </div>
-        </div>
-
-        {/* FIRESTORE SERVER STATUS BAR MANDATE AT FOOTER */}
-        <div className="p-4 rounded-2xl bg-[#050505] border border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-white/5 text-[#FF9F1C]">
-              <Database className="w-4 h-4" />
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-white/60 font-medium">Estado del Servidor:</span>
-              {firestoreStatus.loading ? (
-                <span className="text-amber-400 font-bold flex items-center gap-1.5 animate-pulse">
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  Verificando Firestore...
-                </span>
-              ) : firestoreStatus.connected ? (
-                <span className="text-emerald-400 font-bold flex items-center gap-2 bg-emerald-950/60 border border-emerald-500/30 px-3 py-1 rounded-full shadow-[0_0_12px_rgba(16,185,129,0.2)]">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_#10b981]"></span>
-                  Conexión establecida con el servidor Firestore
-                </span>
-              ) : (
-                <span className="text-red-400 font-bold flex items-center gap-2 bg-red-950/60 border border-red-500/30 px-3 py-1 rounded-full">
-                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></span>
-                  No existe conexión con el servidor Firestore
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 text-[11px]">
-            {syncNotice && (
-              <span className="text-white/60 font-mono italic">
-                {syncNotice}
-              </span>
-            )}
           </div>
         </div>
 

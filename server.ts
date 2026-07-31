@@ -27,6 +27,7 @@ function getAdminCredentials() {
   const pin = currentData.adminCredentials?.pin || DEFAULT_ADMIN_PIN;
   const notificationEmail = currentData.adminCredentials?.notificationEmail || 'codistack@gmail.com';
   const contador = currentData.adminCredentials?.contador !== undefined ? Number(currentData.adminCredentials.contador) : 0;
+  const bandera = currentData.bandera !== undefined ? Number(currentData.bandera) : (contador > 0 ? 2 : 1);
 
   return {
     username,
@@ -35,6 +36,7 @@ function getAdminCredentials() {
     pin,
     notificationEmail,
     contador,
+    bandera,
   };
 }
 
@@ -256,6 +258,7 @@ async function startServer() {
         pin: creds.pin,
         notificationEmail: creds.notificationEmail,
         contador: creds.contador,
+        bandera: creds.bandera,
         isEncryptedInDb: true,
         passwordHashPreview: creds.passwordHash ? `${creds.passwordHash.substring(0, 16)}...` : 'sha256-encrypted',
       },
@@ -274,13 +277,26 @@ async function startServer() {
     const updatedUsername = newUsername || creds.username;
     const updatedPin = newPin || creds.pin;
     const updatedPasswordHash = newPassword ? hashPassword(newPassword) : creds.passwordHash;
-    const newContador = (setContador1 || creds.contador === 0) ? 1 : (creds.contador || 1);
+    
+    // Transición de contador y bandera:
+    // Si contador=0 -> pasa a 1, bandera pasa a 2
+    // Si contador=1 -> pasa a 2, bandera se mantiene en 2
+    let newContador = creds.contador;
+    if (creds.contador === 0 || setContador1) {
+      newContador = 1;
+    } else if (creds.contador === 1) {
+      newContador = 2;
+    } else {
+      newContador = creds.contador + 1;
+    }
+    const newBandera = 2;
 
     dbStore.updateData((curr: any) => {
+      curr.bandera = newBandera;
       curr.adminCredentials = {
         username: updatedUsername,
         clave: updatedPasswordHash, // Guardado en el campo clave de forma encriptada
-        password: updatedPasswordHash, // Primary stored value is the strong SHA-256 hash!
+        password: updatedPasswordHash, // Primary stored value is the strong SHA-256 hash
         passwordHash: updatedPasswordHash,
         pin: updatedPin,
         notificationEmail: targetEmail,
@@ -291,7 +307,7 @@ async function startServer() {
       curr.securityLogs.unshift({
         id: `sec-${Date.now()}`,
         timestamp: new Date().toISOString(),
-        event: `CREDENTIALS_UPDATED_CONTADOR_${newContador}_EMAIL_PING_SENT_TO_${targetEmail.toUpperCase()}`,
+        event: `CREDENTIALS_UPDATED_BANDERA_${newBandera}_CONTADOR_${newContador}_EMAIL_PING_SENT_TO_${targetEmail.toUpperCase()}`,
         ip: req.ip || req.socket.remoteAddress || '127.0.0.1',
         status: 'success',
       });
@@ -300,12 +316,13 @@ async function startServer() {
 
     res.json({
       success: true,
-      message: `Credenciales de administración actualizadas y encriptadas (SHA-256). Contador=${newContador}.`,
+      message: `Credenciales de administración actualizadas y encriptadas (SHA-256). Bandera=${newBandera}, Contador=${newContador}.`,
       credentials: {
         username: updatedUsername,
         pin: updatedPin,
         notificationEmail: targetEmail,
         contador: newContador,
+        bandera: newBandera,
         isEncryptedInDb: true,
         passwordHashPreview: `${updatedPasswordHash.substring(0, 16)}...`,
       },

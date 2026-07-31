@@ -24,18 +24,27 @@ export class DatabaseStore {
     try {
       if (fs.existsSync(DB_FILE_PATH)) {
         const fileContent = fs.readFileSync(DB_FILE_PATH, 'utf-8');
-        const parsed = JSON.parse(fileContent) as FullAppDatabase;
+        const parsed = JSON.parse(fileContent) as any;
         if (parsed && parsed.settings && parsed.products) {
-          return parsed;
+          // El sistema TIENE base de datos: no realiza ningún cambio de reinicialización, mantiene todo igual
+          if (parsed.bandera === undefined) {
+            parsed.bandera = (parsed.adminCredentials?.contador > 0) ? 2 : 1;
+          }
+          return parsed as FullAppDatabase;
         }
       }
     } catch (err) {
-      console.warn('Warning loading database.json, initializing default seed:', err);
+      console.warn('Warning loading database.json:', err);
     }
 
-    // Save default seed
-    this.saveDataDirect(INITIAL_DATABASE);
-    return JSON.parse(JSON.stringify(INITIAL_DATABASE));
+    // El sistema NO tiene base de datos (bandera = 0): crea la base de datos e inserta registros iniciales (bandera = 1)
+    const initial = JSON.parse(JSON.stringify(INITIAL_DATABASE)) as any;
+    initial.bandera = 1;
+    if (initial.adminCredentials) {
+      initial.adminCredentials.contador = 0;
+    }
+    this.saveDataDirect(initial);
+    return initial;
   }
 
   private saveDataDirect(dataToSave: FullAppDatabase): void {
