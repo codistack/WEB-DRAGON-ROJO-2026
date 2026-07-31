@@ -1,0 +1,767 @@
+{
+  "faqs": [
+    {
+      "id": "faq-1",
+      "answer": "No. En Dragón Rojo nuestra prioridad absoluta es la frescura y la textura crujiente del carbón recién salido de la brasa. Por ello, la atención, los pedidos y el consumo se realizan ÚNICAMENTE de manera presencial en el local durante Sábados, Domingos y Feriados.",
+      "category": "Atención",
+      "question": "¿Puedo hacer pedidos por teléfono o delivery?"
+    },
+    {
+      "id": "faq-2",
+      "answer": "Usamos carbón y leña de eucalipto seco. El cuy se baña con un adobo tradicional a base de achiote, ajo y sal marina, y se gira manualmente con paciencia constante durante más de 2 horas sobre las brasas vivas.",
+      "category": "Gastronomía",
+      "question": "¿Cuál es el secreto de la crocancia del Cuy Asado?"
+    },
+    {
+      "id": "faq-3",
+      "answer": "Sí, contamos con amplia zona de estacionamiento privado y vigilado para la comodidad de nuestras familias y grupos de visitantes.",
+      "category": "Instalaciones",
+      "question": "¿Tienen parqueadero para clientes?"
+    },
+    {
+      "id": "faq-4",
+      "answer": "Aceptamos efectivo, transferencias bancarias directas, tarjetas de débito y tarjetas de crédito.",
+      "category": "Pagos",
+      "question": "¿Qué formas de pago aceptan en el local?"
+    }
+  ],
+  "offers": [
+    {
+      "id": "offer-1",
+      "badge": "🔥 COMBO ESTRELLA FAMILIAR",
+      "price": 49.9,
+      "title": "Banquete Familiar Dragón Rojo",
+      "status": "active",
+      "imageUrl": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
+      "description": "1 Cuy Asado Entero al Carbón + 1 Pollo Entero al Carbón + 4 Portiones de Papas con Berro + 4 Caldos de Gallina + 1 Jarra de Colada Morada o Jugo Natural.",
+      "includesItems": [
+        "1 Cuy Asado Entero al Carbón",
+        "1 Pollo Entero al Carbón",
+        "4 Portiones de Papas con Berro",
+        "4 Caldos Criollos",
+        "1 Jarra de Colada Morada"
+      ],
+      "originalPrice": 62
+    },
+    {
+      "id": "offer-2",
+      "badge": "👑 PARRILLA PARA DOS",
+      "price": 29.5,
+      "title": "Combo Tradición Parrillera",
+      "status": "active",
+      "imageUrl": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=800&q=80",
+      "description": "Medio Cuy al Carbón + Medio Pollo al Carbón + Papas con Berro + 2 Humitas de Choclo + 2 Vasos de Morocho Caliente.",
+      "includesItems": [
+        "Medio Cuy al Carbón",
+        "Medio Pollo al Carbón",
+        "Papas con Berro y Salsa de Maní",
+        "2 Humitas Calientes",
+        "2 Morochos Calientes"
+      ],
+      "originalPrice": 36
+    }
+  ],
+  "bandera": 1,
+  "gallery": [
+    {
+      "id": "gal-1",
+      "url": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=800&q=80",
+      "title": "Cuyes Asándose en las Brasas",
+      "category": "Parrilla",
+      "mediaType": "image",
+      "thumbnail": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=400&q=80"
+    },
+    {
+      "id": "gal-2",
+      "url": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=800&q=80",
+      "title": "Pollo Criollo al Carbón de Eucalipto",
+      "category": "Parrilla",
+      "mediaType": "image",
+      "thumbnail": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=400&q=80"
+    },
+    {
+      "id": "gal-3",
+      "url": "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=800&q=80",
+      "title": "Caldo de Gallina Criolla Hirviendo",
+      "category": "Caldos",
+      "mediaType": "image",
+      "thumbnail": "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=400&q=80"
+    },
+    {
+      "id": "gal-4",
+      "url": "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=800&q=80",
+      "title": "Humitas Recién Salidas del Vapor",
+      "category": "Masería",
+      "mediaType": "image",
+      "thumbnail": "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=400&q=80"
+    }
+  ],
+  "version": "1.0.0",
+  "products": [
+    {
+      "id": "prod-cuy-entero",
+      "name": "Cuy Asado 100% al Carbón (Entero)",
+      "slug": "cuy-asado-entero",
+      "isNew": false,
+      "order": 1,
+      "price": 28,
+      "status": "active",
+      "gallery": [
+        "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1000&q=80",
+        "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1000&q=80"
+      ],
+      "history": "En las montañas andinas ecuatorianas, el cuy asado es la cima de la fiesta comunitaria. En Dragón Rojo, adobamos el cuy con ajo, comino, manteca de color y achiote, girándolo pacientemente a mano durante 2 horas.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1000&q=80",
+      "oldPrice": 32,
+      "prepTime": "25 min (Listo en brasa)",
+      "isPopular": true,
+      "categoryId": "cat-cuy",
+      "isFeatured": true,
+      "spicyLevel": 1,
+      "description": "Cuy criollo entero tostado a fuego lento sobre carbón de eucalipto. Cuero dorado e increíblemente crocante con carne jugosa y sazón autóctona.",
+      "ingredients": [
+        "Cuy criollo entero",
+        "Papas asadas con berro",
+        "Salsa de maní artesanal",
+        "Ají de la casa",
+        "Aguacate"
+      ],
+      "seoKeywords": "cuy asado ecuador, cuy al carbon, gastronomia ecuatoriana, cuy cuenca",
+      "availability": true
+    },
+    {
+      "id": "prod-medio-cuy",
+      "name": "Medio Cuy Asado al Carbón",
+      "slug": "medio-cuy-asado",
+      "isNew": false,
+      "order": 2,
+      "price": 15,
+      "status": "active",
+      "gallery": [],
+      "history": "Ideal para quienes desean deleitarse con la textura crocante perfecta del cuero en una porción personal abundante.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1000&q=80",
+      "oldPrice": 17.5,
+      "prepTime": "15 min",
+      "isPopular": true,
+      "categoryId": "cat-cuy",
+      "isFeatured": true,
+      "spicyLevel": 1,
+      "description": "Porción individual o para compartir. Medio cuy crocante al carbón servido con la tradicional guarnición de papas, berro y salsa cremosa de maní.",
+      "ingredients": [
+        "Medio cuy criollo",
+        "Papas con berro",
+        "Salsa de maní",
+        "Ají criollo"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-pollo-entero",
+      "name": "Pollo Asado 100% al Carbón (Entero)",
+      "slug": "pollo-asado-entero",
+      "isNew": false,
+      "order": 3,
+      "price": 16,
+      "status": "active",
+      "gallery": [],
+      "history": "Marinado durante 24 horas en chicha de jora macerada, ajo, orégano de monte y achiote.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=1000&q=80",
+      "oldPrice": 18,
+      "prepTime": "15 min",
+      "isPopular": true,
+      "categoryId": "cat-pollo",
+      "isFeatured": true,
+      "spicyLevel": 0,
+      "description": "Pollo criollo entero adobado con especias secretas de la casa, cocinado a la brasa viva. Piel dorada, crocante y carne sumamente jugosa.",
+      "ingredients": [
+        "Pollo entero al carbón",
+        "Papas fritas o papas cocidas",
+        "Ensalada fresca de la casa",
+        "Salsas tradicionales"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-medio-pollo",
+      "name": "Medio Pollo Asado al Carbón",
+      "slug": "medio-pollo-asado",
+      "isNew": false,
+      "order": 4,
+      "price": 9,
+      "status": "active",
+      "gallery": [],
+      "history": "Preparado en el rotisor artesanal con leña de eucalipto seca.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1626645738196-c2a7c87a8f58?auto=format&fit=crop&w=1000&q=80",
+      "prepTime": "10 min",
+      "isPopular": true,
+      "categoryId": "cat-pollo",
+      "isFeatured": false,
+      "spicyLevel": 0,
+      "description": "Jugoso medio pollo bañado en jus de brasas con papas fritas doradas y ensalada de col con zanahoria.",
+      "ingredients": [
+        "Medio pollo al carbón",
+        "Papas fritas",
+        "Ensalada fresca"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-caldo-gallina",
+      "name": "Caldo de Gallina Criolla",
+      "slug": "caldo-de-gallina-criolla",
+      "isNew": false,
+      "order": 5,
+      "price": 6.5,
+      "status": "active",
+      "gallery": [],
+      "history": "Tradición curativa y energética del campo ecuatoriano, servida hirviendo con huevo duro entero.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1000&q=80",
+      "prepTime": "10 min",
+      "isPopular": true,
+      "categoryId": "cat-caldos",
+      "isFeatured": true,
+      "spicyLevel": 0,
+      "description": "Sopa ancestral reconfortante preparada con gallina criolla de campo hervida a fuego lento durante 4 horas con yuca, plátano verde y cilantro.",
+      "ingredients": [
+        "Gallina criolla de campo",
+        "Yuca suave",
+        "Plátano verde",
+        "Huevo duro",
+        "Cilantro fresco"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-caldo-patas",
+      "name": "Caldo de Patas de Res",
+      "slug": "caldo-de-patas",
+      "isNew": false,
+      "order": 6,
+      "price": 6,
+      "status": "active",
+      "gallery": [],
+      "history": "Plato emblemático del sur ecuatoriano que destaca por su riqueza nutritiva y sabor cremoso insuperable.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1603105037880-880cd4edfb5d?auto=format&fit=crop&w=1000&q=80",
+      "prepTime": "10 min",
+      "isPopular": true,
+      "categoryId": "cat-caldos",
+      "isFeatured": false,
+      "spicyLevel": 0,
+      "description": "Sopa concentrada con pata de res gelatinosa, mote tierno y un suave toque de maní con leche y cilantro.",
+      "ingredients": [
+        "Pata de res selecta",
+        "Mote cocido tierno",
+        "Maní molido",
+        "Leche",
+        "Cebollín y cilantro"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-mote-pata",
+      "name": "Mote Pata Tradicional",
+      "slug": "mote-pata",
+      "isNew": true,
+      "order": 7,
+      "price": 7,
+      "status": "active",
+      "gallery": [],
+      "history": "Receta ancestral tradicional azuaya preparada especialmente en épocas de festividad y unión familiar.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=1000&q=80",
+      "prepTime": "12 min",
+      "isPopular": false,
+      "categoryId": "cat-caldos",
+      "isFeatured": true,
+      "spicyLevel": 0,
+      "description": "Manjar festivo ecuatoriano a base de mote, lomo de cerdo, carne ahumada, pepas de zapallo tostadas y salsa de maní espesa.",
+      "ingredients": [
+        "Mote blanco tierno",
+        "Lomo de cerdo",
+        "Chorizo artesanal",
+        "Pasta de maní",
+        "Pepas de zapallo"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-aguado-pollo",
+      "name": "Aguado de Pollo Criollo",
+      "slug": "aguado-de-pollo",
+      "isNew": false,
+      "order": 8,
+      "price": 5.5,
+      "status": "active",
+      "gallery": [],
+      "history": "El preferido de los domingos en familia para devolver el aliento con el sazón de la leña.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1588566565463-180a5b2090d2?auto=format&fit=crop&w=1000&q=80",
+      "prepTime": "10 min",
+      "isPopular": false,
+      "categoryId": "cat-caldos",
+      "isFeatured": false,
+      "spicyLevel": 0,
+      "description": "Espesa sopa de arroz perfumada con abundante cilantro verde, arvejas, zanahoria y presas de pollo frito.",
+      "ingredients": [
+        "Pollo criollo",
+        "Arroz fragante",
+        "Cilantro licuado",
+        "Arvejas y zanahorias"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-humitas",
+      "name": "Humitas de Choclo Tierno (2 Unidades)",
+      "slug": "humitas-tradicionales",
+      "isNew": false,
+      "order": 9,
+      "price": 3.5,
+      "status": "active",
+      "gallery": [],
+      "history": "Servidas calientes con queso derretido en su interior, perfectas para acompañar el café pasado.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=1000&q=80",
+      "prepTime": "5 min",
+      "isPopular": true,
+      "categoryId": "cat-maseria",
+      "isFeatured": true,
+      "spicyLevel": 0,
+      "description": "Pasteles de maíz tierno molido en piedra, batidos con queso de hoja fresco y cocinados al vapor envueltos en hoja de choclo.",
+      "ingredients": [
+        "Choclo fresco tierno",
+        "Queso criollo de hoja",
+        "Mantequilla de finca",
+        "Huevo"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-tamales",
+      "name": "Tamales Criollos (2 Unidades)",
+      "slug": "tamales-criollos",
+      "isNew": false,
+      "order": 10,
+      "price": 4,
+      "status": "active",
+      "gallery": [],
+      "history": "Cocinados lentamente al vapor para infundir el aroma natural de la hoja de achira.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1505253716362-afaea1d3d1af?auto=format&fit=crop&w=1000&q=80",
+      "prepTime": "5 min",
+      "isPopular": true,
+      "categoryId": "cat-maseria",
+      "isFeatured": false,
+      "spicyLevel": 0,
+      "description": "Masa suave de maíz sazonada, rellena de seco de pollo y chancho, pasas, huevo duro y ají dulce, envuelta en hoja de achira.",
+      "ingredients": [
+        "Masa de maíz sazonada",
+        "Pollo desmechado",
+        "Cerdo criollo",
+        "Huevo duro",
+        "Pasas"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-quimbolitos",
+      "name": "Quimbolitos Dulces Tradicionales (2 Unidades)",
+      "slug": "quimbolitos-dulces",
+      "isNew": false,
+      "order": 11,
+      "price": 3.5,
+      "status": "active",
+      "gallery": [],
+      "history": "Receta repostera tradicional andina con suave textura aromática.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1000&q=80",
+      "prepTime": "5 min",
+      "isPopular": false,
+      "categoryId": "cat-maseria",
+      "isFeatured": false,
+      "spicyLevel": 0,
+      "description": "Esponjosos bizcochuelos de harina de maíz y trigo cocidos en hoja de achira con pasas de uva y un toque de anís.",
+      "ingredients": [
+        "Harina de maíz y trigo",
+        "Mantequilla pura",
+        "Huevos de campo",
+        "Pasas",
+        "Licor de anís"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-chiviles",
+      "name": "Chiviles de Maíz con Queso (2 Unidades)",
+      "slug": "chiviles-con-queso",
+      "isNew": true,
+      "order": 12,
+      "price": 3,
+      "status": "active",
+      "gallery": [],
+      "history": "Especialidad ancestral del sur ecuatoriano.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1565299585323-38d6b0865b47?auto=format&fit=crop&w=1000&q=80",
+      "prepTime": "5 min",
+      "isPopular": false,
+      "categoryId": "cat-maseria",
+      "isFeatured": false,
+      "spicyLevel": 0,
+      "description": "Bocadillos dorados de masa de maíz amarillo rellenos de queso salado y cocinados en hoja de huicundo.",
+      "ingredients": [
+        "Maíz amarillo",
+        "Queso fresco",
+        "Hoja de huicundo"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-colada-morada",
+      "name": "Colada Morada Ancestral (Vaso / Jarra)",
+      "slug": "colada-morada",
+      "isNew": false,
+      "order": 13,
+      "price": 3.5,
+      "status": "active",
+      "gallery": [],
+      "history": "Nuestra Colada Morada se prepara respetando la maceración tradicional durante 3 días para extraer el máximo sabor frutado.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1513558161293-cdaf765ed2fd?auto=format&fit=crop&w=1000&q=80",
+      "prepTime": "3 min",
+      "isPopular": true,
+      "categoryId": "cat-bebidas",
+      "isFeatured": true,
+      "spicyLevel": 0,
+      "description": "Bebida milenaria a base de harina de maíz negro, mortiño, mora, piña, babaco, frutilla y especias aromáticas (canela, ishpingo, clavo).",
+      "ingredients": [
+        "Harina de maíz morado",
+        "Mortiño andino",
+        "Mora salvaje",
+        "Piña y babaco",
+        "Ishpingo y canela"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-morocho",
+      "name": "Morocho Caliente de Leche con Canela",
+      "slug": "morocho-caliente",
+      "isNew": false,
+      "order": 14,
+      "price": 3,
+      "status": "active",
+      "gallery": [],
+      "history": "Infusión reconfortante para las tardes frías del austro ecuatoriano.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1544787219-7f47ccb76574?auto=format&fit=crop&w=1000&q=80",
+      "prepTime": "3 min",
+      "isPopular": true,
+      "categoryId": "cat-bebidas",
+      "isFeatured": false,
+      "spicyLevel": 0,
+      "description": "Cremoso atol de maíz morocho partido cocinado con abundante leche pura, pasas jugosas y ramitas de canela entera.",
+      "ingredients": [
+        "Maíz morocho blanco",
+        "Leche entera fresca",
+        "Panela y canela",
+        "Uvas pasas"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-dulce-higo",
+      "name": "Dulce de Higo en Miel de Panela con Queso",
+      "slug": "dulce-de-higo-con-queso",
+      "isNew": false,
+      "order": 15,
+      "price": 4,
+      "status": "active",
+      "gallery": [],
+      "history": "El postre por excelencia de la serranía ecuatoriana: el contraste dulce-salado perfecto.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&w=1000&q=80",
+      "prepTime": "5 min",
+      "isPopular": true,
+      "categoryId": "cat-postres",
+      "isFeatured": true,
+      "spicyLevel": 0,
+      "description": "Higos macerados cocinados suavemente en melaza de panela artesanal servidos con una abundante tajada de queso fresco salado.",
+      "ingredients": [
+        "Higos frescos enteros",
+        "Panela de caña pura",
+        "Canela y clavo de olor",
+        "Queso fresco salado"
+      ],
+      "availability": true
+    },
+    {
+      "id": "prod-dulce-pina",
+      "name": "Dulce de Piña y Mora de Casilla",
+      "slug": "dulce-de-pina-mora",
+      "isNew": false,
+      "order": 16,
+      "price": 3.5,
+      "status": "active",
+      "gallery": [],
+      "history": "Preparado en paila de bronce a fuego de leña.",
+      "isCombo": false,
+      "imageUrl": "https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=1000&q=80",
+      "prepTime": "5 min",
+      "isPopular": false,
+      "categoryId": "cat-postres",
+      "isFeatured": false,
+      "spicyLevel": 0,
+      "description": "Mermelada rústica casera de piña dorada y mora silvestre servida tibia con queso criollo batido.",
+      "ingredients": [
+        "Piña madura",
+        "Mora silvestre",
+        "Panela",
+        "Queso fresco"
+      ],
+      "availability": true
+    }
+  ],
+  "settings": {
+    "city": "Cuenca",
+    "name": "Dragón Rojo",
+    "email": "contacto@dragonrojo.ec",
+    "phone": "+593 99 123 4567",
+    "slogan": "Gastronomía Típica y Cocina 100% al Carbón",
+    "address": "Vía Principal Tradicional s/n, Sector Las Parrillas",
+    "country": "Ecuador",
+    "logoUrl": "https://imgur.com/a/IYGNbmi",
+    "whatsapp": "+593991234567",
+    "themeMode": "dark",
+    "faviconUrl": "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=64&q=80",
+    "noticeText": "📍 ATENCIÓN PRESENCIAL EXCLUSIVA: Pedidos y reservaciones se realizan exclusivamente de manera presencial en nuestro restaurante durante Sábados, Domingos y Feriados.",
+    "accentColor": "#f97316",
+    "coordinates": {
+      "lat": -2.9001,
+      "lng": -79.0059
+    },
+    "description": "El auténtico sabor del Cuy Asado al Carbón, Pollo a la Brasa y Tradición Criolla Ecuatoriana. Sabor ancestral preparado a fuego lento con leña y carbón de eucalipto.",
+    "primaryColor": "#dc2626",
+    "googleMapsUrl": "https://maps.app.goo.gl/feFiuxP8rF6Bh26q8",
+    "flameEffectsEnabled": true
+  },
+  "auditLogs": [
+    {
+      "id": "log-init",
+      "ip": "127.0.0.1",
+      "user": "Sistema",
+      "action": "Inicialización de Base de Datos y Colecciones Firestore",
+      "details": "Colecciones creadas y datos semilla cargados con éxito.",
+      "timestamp": "2026-07-31T21:31:34.783Z"
+    }
+  ],
+  "schedules": [
+    {
+      "id": "sch-1",
+      "note": "Brasas encendidas desde temprano. Atención por orden de llegada presencial.",
+      "hours": "08:30 AM - 18:30 PM",
+      "status": "SOLO_PRESENCIAL",
+      "dayGroup": "SÁBADOS"
+    },
+    {
+      "id": "sch-2",
+      "note": "Día de banquete familiar. Cuyes y pollos asados continuamente.",
+      "hours": "08:30 AM - 18:30 PM",
+      "status": "SOLO_PRESENCIAL",
+      "dayGroup": "DOMINGOS"
+    },
+    {
+      "id": "sch-3",
+      "note": "Atención especial continua durante todos los feriados nacionales y locales.",
+      "hours": "08:00 AM - 19:00 PM",
+      "status": "SOLO_PRESENCIAL",
+      "dayGroup": "FERIADOS Y DÍAS FESTIVOS"
+    }
+  ],
+  "updatedAt": "2026-07-31T22:42:43.361Z",
+  "categories": [
+    {
+      "id": "cat-cuy",
+      "icon": "Flame",
+      "name": "Cuy Asado al Carbón",
+      "slug": "cuy-asado",
+      "order": 1,
+      "visible": true,
+      "description": "Nuestra especialidad insigne. Cuyes criollos seleccionados, sazonados con especias andinas y asados a mano sobre carbón encendido."
+    },
+    {
+      "id": "cat-pollo",
+      "icon": "Drumstick",
+      "name": "Pollo al Carbón",
+      "slug": "pollo-al-carbon",
+      "order": 2,
+      "visible": true,
+      "description": "Pollos criollos marinados 24 horas y dorados lentamente sobre las brasas de eucalipto."
+    },
+    {
+      "id": "cat-caldos",
+      "icon": "Soup",
+      "name": "Caldos y Sopas Criollas",
+      "slug": "caldos-y-sopas",
+      "order": 3,
+      "visible": true,
+      "description": "Elixir revitalizante preparado con gallina criolla, patas de res y recetas de las abuelas ecuatorianas."
+    },
+    {
+      "id": "cat-maseria",
+      "icon": "Wheat",
+      "name": "Masería y Tradición",
+      "slug": "maseria-y-tradicion",
+      "order": 4,
+      "visible": true,
+      "description": "Humitas, tamales, quimbolitos y chiviles hechos en hoja de choclo o achira al vapor."
+    },
+    {
+      "id": "cat-bebidas",
+      "icon": "Coffee",
+      "name": "Bebidas Tradicionales",
+      "slug": "bebidas-tradicionales",
+      "order": 5,
+      "visible": true,
+      "description": "Colada Morada perfumada, Morocho caliente, café pasado en olleta y jugos de frutas andinas."
+    },
+    {
+      "id": "cat-postres",
+      "icon": "Cake",
+      "name": "Dulces Típicos",
+      "slug": "dulces-tipicos",
+      "order": 6,
+      "visible": true,
+      "description": "Dulce de higo en almíbar de panela con queso criollo, dulce de piña y mora de casilla."
+    }
+  ],
+  "seoMetadata": [
+    {
+      "ogImage": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1200&q=80",
+      "keywords": "cuy asado ecuador, pollo al carbon cuenca, gastronomia tipica ecuatoriana, caldo de gallina criolla, mote pata, colada morada, restaurante de parrilla ecuador",
+      "pageTitle": "Dragón Rojo - Cuy Asado 100% al Carbón y Gastronomía Típica Ecuatoriana",
+      "canonicalUrl": "https://dragonrojo.ec",
+      "metaDescription": "Descubre el auténtico Cuy Asado al Carbón, Pollo a la Brasa, Caldo de Gallina Criolla y Mote Pata en Restaurante Dragón Rojo. Atención presencial Sábados, Domingos y Feriados."
+    }
+  ],
+  "socialLinks": [
+    {
+      "email": "contacto@dragonrojo.ec",
+      "tiktok": "https://tiktok.com/@dragonrojoec",
+      "threads": "https://threads.net/@dragonrojoec",
+      "youtube": "https://youtube.com/@dragonrojoec",
+      "facebook": "https://facebook.com/dragonrojoecuador",
+      "whatsapp": "https://wa.me/593991234567?text=Hola%20Drag%C3%B3n%20Rojo%20deseo%20m%C3%A1s%20informaci%C3%B3n%20sobre%20el%20men%C3%BA%20y%20ubicaci%C3%B3n",
+      "instagram": "https://instagram.com/dragonrojoec"
+    }
+  ],
+  "chefCarousel": [
+    {
+      "id": "chef-1",
+      "badge": "🔥 RECOMENDACIÓN DEL CHEF",
+      "price": 28,
+      "title": "Cuy Asado al Carbón",
+      "status": "active",
+      "imageUrl": "https://images.unsplash.com/photo-1544025162-d76694265947?auto=format&fit=crop&w=1024&q=80",
+      "subtitle": "Especialidad Tradicional Ancestral",
+      "description": "Cuy entero preparado lentamente a las brasas de eucalipto. Acompañado con papas doradas en salsa de maní artesanal, berro fresco y ají de la casa."
+    },
+    {
+      "id": "chef-2",
+      "badge": "⭐ FAVORITO DE LA FAMILIA",
+      "price": 16,
+      "title": "Pollo a la Brasa al Carbón",
+      "status": "active",
+      "imageUrl": "https://images.unsplash.com/photo-1598515214211-89d3c73ae83b?auto=format&fit=crop&w=1024&q=80",
+      "subtitle": "Sabor Cítrico y Ahumado Insuperable",
+      "description": "Pollo criollo entero marinado en chicha de jora, ajos de campo y especias. Piel dorada ultra crocante y carne súper jugosa."
+    },
+    {
+      "id": "chef-3",
+      "badge": "🍲 TRADICIÓN DE CAMPO",
+      "price": 6.5,
+      "title": "Caldo de Gallina Criolla",
+      "status": "active",
+      "imageUrl": "https://images.unsplash.com/photo-1547592180-85f173990554?auto=format&fit=crop&w=1024&q=80",
+      "subtitle": "Sopa Revividora de Fuego Lento",
+      "description": "Infusión sanadora de 4 horas de cocción con yuca tierna, plátano verde, huevo duro entero y cilantro de huerto."
+    },
+    {
+      "id": "chef-4",
+      "badge": "👑 MEJOR OPCIÓN FAMILIAR",
+      "price": 42,
+      "title": "Banquete Parrillero Dragón",
+      "status": "active",
+      "imageUrl": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&w=1024&q=80",
+      "subtitle": "Para Grupos y Celebraciones Especiales",
+      "description": "Incluye 1 Cuy entero al carbón + 1 Pollo al carbón + Jarra de Colada Morada o Chicha + Papas y Salsa de Maní Ilimitadas."
+    }
+  ],
+  "securityLogs": [
+    {
+      "id": "sec-init",
+      "ip": "127.0.0.1",
+      "event": "BOOTSTRAP_SECURITY",
+      "status": "success",
+      "timestamp": "2026-07-31T21:31:34.783Z"
+    }
+  ],
+  "testimonials": [
+    {
+      "id": "test-1",
+      "city": "Cuenca",
+      "date": "Hace 3 días",
+      "text": "¡El mejor cuy asado de todo el Ecuador! El cuero queda crujiente como una galleta y la carne hiper jugosa. La salsa de maní con las papitas y el berro es una auténtica maravilla.",
+      "rating": 5,
+      "verified": true,
+      "authorName": "Carlos M. Vintimilla"
+    },
+    {
+      "id": "test-2",
+      "city": "Guayaquil",
+      "date": "Hace 1 semana",
+      "text": "Cada vez que viajamos los fines de semana hacemos la parada obligatoria en Dragón Rojo. El caldo de gallina criolla te revive el alma y la colada morada es espectacular.",
+      "rating": 5,
+      "verified": true,
+      "authorName": "María Fernanda Andrade"
+    },
+    {
+      "id": "test-3",
+      "city": "Quito",
+      "date": "Hace 2 semanas",
+      "text": "Atención presencial impecable y tradicional. Ver los cuyes asándose en la parrilla gigante a la leña mientras disfrutas de unas humitas calientes con café no tiene precio.",
+      "rating": 5,
+      "verified": true,
+      "authorName": "Ing. Roberto Silva"
+    }
+  ],
+  "holidayNotices": [
+    {
+      "id": "hn-1",
+      "title": "Atención Especial Feriados de Año Nuevo y Carnaval",
+      "status": "active",
+      "endDate": "2026-12-31",
+      "message": "Durante todos los feriados nacionales abrimos nuestras puertas desde las 08:00 AM con asado continuo de cuyes y pollos al carbón. Reservaciones exclusivamente presenciales por orden de llegada.",
+      "badgeText": "🎉 ATENCIÓN ESPECIAL FERIADOS",
+      "createdAt": "2026-07-31T21:31:34.783Z",
+      "startDate": "2026-08-01"
+    }
+  ],
+  "adminCredentials": {
+    "pin": "889900",
+    "clave": "d1a6e9fc002e3b2e7178ee7f07e597c5e533c39c8eb00085db0f2dc24c52f534",
+    "contador": 0,
+    "password": "d1a6e9fc002e3b2e7178ee7f07e597c5e533c39c8eb00085db0f2dc24c52f534",
+    "username": "admin@dragonrojo.ec",
+    "updatedAt": "2026-07-31T21:31:34.783Z",
+    "rawPassword": "dragonrojo2026",
+    "passwordHash": "d1a6e9fc002e3b2e7178ee7f07e597c5e533c39c8eb00085db0f2dc24c52f534",
+    "isEncryptedInDb": true,
+    "notificationEmail": "codistack@gmail.com"
+  }
+}

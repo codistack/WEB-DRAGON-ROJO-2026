@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { FullAppDatabase } from '../types';
 import { INITIAL_DATABASE } from '../data/initialData';
-import { syncFullDatabaseToSupabase } from '../lib/supabase';
+import { syncFullDatabaseToSupabase, loadFullDatabaseFromSupabase } from '../lib/supabase';
 
 const DB_FILE_PATH = path.join(process.cwd(), 'database.json');
 
@@ -12,6 +12,7 @@ export class DatabaseStore {
 
   private constructor() {
     this.data = this.loadData();
+    this.initFromSupabase().catch((err) => console.warn('Supabase initial sync notice:', err?.message || err));
   }
 
   public static getInstance(): DatabaseStore {
@@ -19,6 +20,22 @@ export class DatabaseStore {
       DatabaseStore.instance = new DatabaseStore();
     }
     return DatabaseStore.instance;
+  }
+
+  public async initFromSupabase(): Promise<FullAppDatabase> {
+    try {
+      const remoteDb = await loadFullDatabaseFromSupabase();
+      if (remoteDb && remoteDb.products && remoteDb.settings) {
+        this.data = remoteDb;
+        this.saveDataDirect(this.data);
+        console.log('✅ Base de datos cargada exitosamente desde Supabase Cloud DB.');
+      } else {
+        await syncFullDatabaseToSupabase(this.data);
+      }
+    } catch (err) {
+      console.warn('Notice al sincronizar con Supabase en inicialización:', err);
+    }
+    return this.data;
   }
 
   private loadData(): FullAppDatabase {

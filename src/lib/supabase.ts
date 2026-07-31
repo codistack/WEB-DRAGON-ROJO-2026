@@ -254,13 +254,63 @@ export async function syncSettingsToSupabase(settings: RestaurantSettings) {
 }
 
 /**
+ * Carga el estado completo de la base de datos desde Supabase Cloud DB al iniciar
+ */
+export async function loadFullDatabaseFromSupabase(): Promise<FullAppDatabase | null> {
+  try {
+    const { data: stateData, error: stateErr } = await supabase
+      .from('app_state')
+      .select('data')
+      .eq('id', 'current')
+      .maybeSingle();
+
+    const { data: credData, error: credErr } = await supabase
+      .from('admin_credentials')
+      .select('*')
+      .eq('id', 'credentials')
+      .maybeSingle();
+
+    if (!stateErr && stateData && stateData.data) {
+      const fullDb = stateData.data as FullAppDatabase;
+
+      if (!credErr && credData) {
+        fullDb.adminCredentials = {
+          ...fullDb.adminCredentials,
+          username: credData.username || fullDb.adminCredentials?.username || 'admin@dragonrojo.ec',
+          clave: credData.clave || fullDb.adminCredentials?.clave || '',
+          password: credData.clave || fullDb.adminCredentials?.password || '',
+          passwordHash: credData.clave || fullDb.adminCredentials?.passwordHash || '',
+          pin: credData.pin || fullDb.adminCredentials?.pin || '889900',
+          notificationEmail: credData.notification_email || fullDb.adminCredentials?.notificationEmail || 'codistack@gmail.com',
+          contador: credData.contador !== undefined ? Number(credData.contador) : fullDb.adminCredentials?.contador ?? 0,
+        };
+        fullDb.bandera = credData.bandera !== undefined ? Number(credData.bandera) : (fullDb.bandera ?? 2);
+      }
+
+      return fullDb;
+    }
+  } catch (err) {
+    console.warn('Notice loading from Supabase at startup:', err);
+  }
+  return null;
+}
+
+/**
  * Sincroniza el estado completo de la base de datos en las tablas de Supabase
  */
 export async function syncFullDatabaseToSupabase(db: FullAppDatabase) {
   try {
     const results: Record<string, boolean> = {};
 
-    // 1. Admin Credentials
+    // 1. Documento JSON global 'app_state' (Garantiza persistencia total de todos los mantenimientos)
+    const { error: fullDbErr } = await supabase.from('app_state').upsert({
+      id: 'current',
+      data: db,
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'id' });
+    results['app_state'] = !fullDbErr;
+
+    // 2. Admin Credentials
     if (db.adminCredentials) {
       const res = await saveAdminCredentialsToSupabase(
         db.adminCredentials.username || 'admin@dragonrojo.ec',
@@ -273,31 +323,21 @@ export async function syncFullDatabaseToSupabase(db: FullAppDatabase) {
       results['admin_credentials'] = res.success;
     }
 
-    // 2. Platillos / Products
+    // 3. Tablas relacionales opcionales (sincroniza sin fallar si la tabla no existe aún)
     if (db.products && db.products.length > 0) {
       const resDishes = await syncDishesToSupabase(db.products);
       results['dishes'] = resDishes.success;
     }
 
-    // 3. Categorías
     if (db.categories && db.categories.length > 0) {
       const resCats = await syncCategoriesToSupabase(db.categories);
       results['categories'] = resCats.success;
     }
 
-    // 4. Restaurant Settings
     if (db.settings) {
       const resSet = await syncSettingsToSupabase(db.settings);
       results['restaurant_settings'] = resSet.success;
     }
-
-    // 5. Documento JSON global 'app_state'
-    const { error: fullDbErr } = await supabase.from('app_state').upsert({
-      id: 'current',
-      data: db,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'id' });
-    results['app_state'] = !fullDbErr;
 
     return { success: true, results };
   } catch (err: any) {

@@ -570,16 +570,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
   const handleDeleteCategory = async (id: string) => {
     if (!dbData || !confirm('¿Eliminar esta categoría?')) return;
     const updatedCategories = (dbData.categories || []).filter((c) => c.id !== id);
-    setDbData({ ...dbData, categories: updatedCategories });
+    const newDb = { ...dbData, categories: updatedCategories };
+    setDbData(newDb);
+    await syncFullDatabaseToSupabase(newDb);
 
     try {
       await fetch(`/api/admin/categories/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token || 'admin-authenticated'}` },
       });
-      triggerNotify('Categoría eliminada');
+      triggerNotify('Categoría eliminada de Supabase y servidor');
     } catch (err) {
-      triggerNotify('Categoría eliminada localmente');
+      triggerNotify('Categoría eliminada de Supabase');
     }
   };
 
@@ -587,7 +589,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
   const handleSaveSocials = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dbData) return;
-    setDbData({ ...dbData, socialLinks: [socialsForm] });
+    const newDb = { ...dbData, socialLinks: [socialsForm] };
+    setDbData(newDb);
+    await syncFullDatabaseToSupabase(newDb);
     try {
       await fetch('/api/admin/socials', {
         method: 'PUT',
@@ -597,9 +601,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         },
         body: JSON.stringify(socialsForm),
       });
-      triggerNotify('Redes sociales guardadas correctamente');
+      triggerNotify('Redes sociales guardadas en Supabase y Servidor');
     } catch (err) {
-      triggerNotify('Redes sociales guardadas localmente');
+      triggerNotify('Redes sociales guardadas en Supabase');
     }
   };
 
@@ -607,7 +611,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
   const handleSaveSeo = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!dbData) return;
-    setDbData({ ...dbData, seoMetadata: [seoForm] });
+    const newDb = { ...dbData, seoMetadata: [seoForm] };
+    setDbData(newDb);
+    await syncFullDatabaseToSupabase(newDb);
     try {
       await fetch('/api/admin/seo', {
         method: 'PUT',
@@ -617,9 +623,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         },
         body: JSON.stringify(seoForm),
       });
-      triggerNotify('Metadatos SEO guardados correctamente');
+      triggerNotify('Metadatos SEO guardados en Supabase y Servidor');
     } catch (err) {
-      triggerNotify('Metadatos SEO guardados localmente');
+      triggerNotify('Metadatos SEO guardados en Supabase');
     }
   };
 
@@ -669,8 +675,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       items = items.map((item) => (item.id === itemId ? chefToSave : item));
     }
 
-    setDbData({ ...dbData, chefCarousel: items });
+    const newDb = { ...dbData, chefCarousel: items };
+    setDbData(newDb);
     setEditingChefItem(null);
+    await syncFullDatabaseToSupabase(newDb);
 
     try {
       const authHeader = `Bearer ${token || localStorage.getItem('dragon_admin_token') || 'admin-authenticated'}`;
@@ -686,16 +694,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       if (data.success && data.chefCarousel) {
         setDbData({ ...dbData, chefCarousel: data.chefCarousel });
       }
-      triggerNotify('Carrusel del Chef guardado correctamente');
+      triggerNotify('Carrusel del Chef guardado en Supabase y Servidor');
     } catch (err) {
-      triggerNotify('Carrusel guardado localmente');
+      triggerNotify('Carrusel guardado en Supabase');
     }
   };
 
   const handleDeleteChefItem = async (id: string) => {
     if (!dbData || !confirm('¿Eliminar este ítem del carrusel del chef?')) return;
     const items = (dbData.chefCarousel || []).filter((item) => item.id !== id);
-    setDbData({ ...dbData, chefCarousel: items });
+    const newDb = { ...dbData, chefCarousel: items };
+    setDbData(newDb);
+    await syncFullDatabaseToSupabase(newDb);
 
     try {
       const authHeader = `Bearer ${token || localStorage.getItem('dragon_admin_token') || 'admin-authenticated'}`;
@@ -709,7 +719,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       });
       triggerNotify('Ítem eliminado del carrusel');
     } catch (err) {
-      triggerNotify('Ítem eliminado localmente');
+      triggerNotify('Ítem eliminado en Supabase');
     }
   };
 
@@ -718,7 +728,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
     const newStatus = item.status === 'active' ? 'inactive' : 'active';
     const updatedItem = { ...item, status: newStatus as 'active' | 'inactive' };
     const items = (dbData.chefCarousel || []).map((i) => (i.id === item.id ? updatedItem : i));
-    setDbData({ ...dbData, chefCarousel: items });
+    const newDb = { ...dbData, chefCarousel: items };
+    setDbData(newDb);
+    await syncFullDatabaseToSupabase(newDb);
 
     try {
       const authHeader = `Bearer ${token || localStorage.getItem('dragon_admin_token') || 'admin-authenticated'}`;
@@ -732,7 +744,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       });
       triggerNotify(`Estado de ${item.title} cambiado a ${newStatus.toUpperCase()}`);
     } catch (err) {
-      triggerNotify('Estado actualizado localmente');
+      triggerNotify('Estado actualizado en Supabase');
     }
   };
 
@@ -756,8 +768,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       updatedSchedules = updatedSchedules.map((s) => (s.id === schId ? scheduleToSave : s));
     }
 
-    setDbData({ ...dbData, schedules: updatedSchedules });
+    const newDb = { ...dbData, schedules: updatedSchedules };
+    setDbData(newDb);
     setEditingSchedule(null);
+    await syncFullDatabaseToSupabase(newDb);
 
     try {
       const url = isNew ? '/api/admin/schedules' : `/api/admin/schedules/${schId}`;
@@ -771,9 +785,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         },
         body: JSON.stringify(scheduleToSave),
       });
-      triggerNotify('Horario de atención guardado');
+      triggerNotify('Horario de atención guardado en Supabase y Servidor');
     } catch (err) {
-      triggerNotify('Horario guardado localmente');
+      triggerNotify('Horario guardado en Supabase');
     }
   };
 
