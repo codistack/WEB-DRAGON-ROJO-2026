@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 import { FullAppDatabase } from '../types';
 import { INITIAL_DATABASE } from '../data/initialData';
+import { syncFullDatabaseToSupabase } from '../lib/supabase';
 
 const DB_FILE_PATH = path.join(process.cwd(), 'database.json');
 
@@ -75,18 +76,28 @@ export class DatabaseStore {
       this.data.auditLogs = this.data.auditLogs.slice(0, 100);
     }
     this.saveDataDirect(this.data);
+    // Sincronizar automáticamente en tiempo real con Supabase Cloud DB
+    syncFullDatabaseToSupabase(this.data).catch((err) => {
+      console.warn('Background Supabase sync notice:', err?.message || err);
+    });
     return this.data;
   }
 
   public resetToSeed(): FullAppDatabase {
     this.data = JSON.parse(JSON.stringify(INITIAL_DATABASE));
     this.saveDataDirect(this.data);
+    syncFullDatabaseToSupabase(this.data).catch((err) => {
+      console.warn('Background Supabase sync notice:', err?.message || err);
+    });
     return this.data;
   }
 
   public restoreBackup(importedData: FullAppDatabase): FullAppDatabase {
     this.data = importedData;
     this.saveDataDirect(this.data);
+    syncFullDatabaseToSupabase(this.data).catch((err) => {
+      console.warn('Background Supabase sync notice:', err?.message || err);
+    });
     return this.data;
   }
 }

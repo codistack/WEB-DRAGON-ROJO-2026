@@ -193,6 +193,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
     }
   };
 
+  const handleLogoutAndRelogin = () => {
+    localStorage.removeItem('dragon_admin_token');
+    localStorage.removeItem('dragon_admin_username');
+    onLogout();
+  };
+
   const handleSaveMandatoryCredentials = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!mandatoryForm.newUsername.trim()) {
@@ -238,14 +244,20 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
         mandatoryForm.notificationEmail.trim(),
         1
       );
+      await saveAdminCredentialsToSupabase(
+        mandatoryForm.newUsername.trim(),
+        fullClave,
+        mandatoryForm.newPin.trim(),
+        mandatoryForm.notificationEmail.trim(),
+        1,
+        2
+      );
 
-      setCredContador(1);
-      setMandatorySuccess(true);
-      setDbData((prev) => ({
-        ...prev,
+      const newDb = {
+        ...(dbData || INITIAL_DATABASE),
         bandera: 2,
         adminCredentials: {
-          ...prev.adminCredentials,
+          ...(dbData?.adminCredentials || INITIAL_DATABASE.adminCredentials),
           username: mandatoryForm.newUsername.trim(),
           pin: mandatoryForm.newPin.trim(),
           notificationEmail: mandatoryForm.notificationEmail.trim(),
@@ -254,8 +266,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
           clave: fullClave,
           updatedAt: new Date().toISOString(),
         },
-      }));
-      triggerNotify('Credenciales actualizadas obligatoriamente. Contador=1 en base de datos.');
+      };
+
+      await syncFullDatabaseToSupabase(newDb);
+
+      setCredContador(1);
+      setMandatorySuccess(true);
+      setDbData(newDb);
+      triggerNotify('Credenciales guardadas en Supabase y Firestore. Contador=1.');
     } catch (err) {
       console.warn('Network fallback mandatory credentials save:', err);
       await sendCredentialChangePing(mandatoryForm.newUsername.trim(), mandatoryForm.notificationEmail.trim());
@@ -320,10 +338,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
           2
         );
 
+        const newDb = {
+          ...(dbData || INITIAL_DATABASE),
+          bandera: 2,
+          adminCredentials: {
+            ...(dbData?.adminCredentials || INITIAL_DATABASE.adminCredentials),
+            username: credForm.newUsername,
+            pin: credForm.newPin,
+            notificationEmail: targetEmail,
+            contador: newCont,
+            isEncryptedInDb: true,
+            clave: fullClave,
+            updatedAt: new Date().toISOString(),
+          },
+        };
+
+        await syncFullDatabaseToSupabase(newDb);
+
         setCredContador(newCont);
         setCredMessage({
           type: 'success',
-          text: `¡Datos guardados correctamente en la base de datos! Bandera=2, Contador=${newCont}. Las nuevas credenciales se han actualizado y guardado correctamente en el documento 'credentials' (colección 'admin'). Por favor, haga clic en el botón a continuación para salir del sistema y vuelva a ingresar con sus nuevas credenciales.`,
+          text: `¡Datos guardados correctamente en la base de datos Supabase! Usuario: ${credForm.newUsername}. Por favor, haga clic en el botón para salir del sistema y volver a ingresar con sus nuevas credenciales.`,
         });
 
         // Actualizar el estado interno de credForm y dbData para reflejar los cambios inmediatamente
@@ -333,22 +368,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
           newPassword: '',
         }));
 
-        setDbData((prev) => ({
-          ...prev,
-          bandera: 2,
-          adminCredentials: {
-            ...prev.adminCredentials,
-            username: credForm.newUsername,
-            pin: credForm.newPin,
-            notificationEmail: targetEmail,
-            contador: newCont,
-            isEncryptedInDb: true,
-            clave: fullClave,
-            updatedAt: new Date().toISOString(),
-          },
-        }));
+        setDbData(newDb);
 
-        triggerNotify(`Credenciales actualizadas en base de datos (Bandera=2, Contador=${newCont})`);
+        triggerNotify(`Credenciales guardadas con éxito en Supabase DB (Contador=${newCont})`);
       } else {
         setCredMessage({ type: 'error', text: data.message || 'Error al guardar credenciales' });
       }
@@ -374,7 +396,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
       setCredContador(2);
       setCredMessage({
         type: 'success',
-        text: `¡Datos guardados correctamente en la base de datos! Bandera=2, Contador=2. La clave se ha guardado de forma encriptada en la colección 'admin' (documento 'credentials', campo 'clave'). Por favor salga del sistema y vuelva a ingresar.`,
+        text: `¡Datos guardados correctamente en la base de datos Supabase! Por favor, haga clic en el botón para salir del sistema y volver a ingresar.`,
       });
       setCredForm((prev) => ({ ...prev, currentPassword: '', newPassword: '' }));
       triggerNotify(`Credenciales guardadas y ping enviado a ${targetEmail}`);
@@ -2425,14 +2447,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ token, onLogout 
                   </div>
 
                   {credMessage.type === 'success' && (
-                    <div className="pt-2 flex items-center justify-end">
+                    <div className="pt-2 flex items-center justify-start">
                       <button
                         type="button"
-                        onClick={onLogout}
-                        className="px-4 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-black text-xs uppercase tracking-wider flex items-center gap-2 shadow-[0_0_15px_rgba(230,30,42,0.4)] transition-all hover:scale-105"
+                        onClick={handleLogoutAndRelogin}
+                        className="px-6 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest flex items-center gap-2.5 shadow-[0_0_20px_rgba(16,185,129,0.5)] transition-all hover:scale-105"
                       >
-                        <LogOut className="w-4 h-4" />
-                        <span>Salir del Sistema y Volver a Ingresar</span>
+                        <CheckCircle2 className="w-5 h-5 text-white" />
+                        <span>DATOS GUARDADOS: SALIR E INGRESAR NUEVAMENTE</span>
                       </button>
                     </div>
                   )}
@@ -2906,11 +2928,11 @@ service cloud.firestore {
                 <div className="pt-3 border-t border-emerald-500/30 flex justify-center">
                   <button
                     type="button"
-                    onClick={onLogout}
-                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-[#E61E2A] hover:bg-[#c71823] text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2 shadow-[0_0_25px_rgba(230,30,42,0.6)] transition-all hover:scale-105"
+                    onClick={handleLogoutAndRelogin}
+                    className="w-full sm:w-auto px-8 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs uppercase tracking-widest flex items-center justify-center gap-2.5 shadow-[0_0_25px_rgba(16,185,129,0.6)] transition-all hover:scale-105"
                   >
-                    <LogOut className="w-4 h-4" />
-                    <span>Salir del Sistema y Volver a Ingresar</span>
+                    <CheckCircle2 className="w-5 h-5 text-white" />
+                    <span>DATOS GUARDADOS: SALIR E INGRESAR NUEVAMENTE</span>
                   </button>
                 </div>
               </div>
